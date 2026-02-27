@@ -8,7 +8,7 @@ def start_display():
     app = QGuiApplication(sys.argv)
     engine = QQmlApplicationEngine()
     engine.addImportPath(sys.path[0])
-    qml_file = Path(__file__).parent / "main.qml"
+    qml_file = Path(__file__).parent / "pages" / "main.qml"
     engine.load(str(qml_file))
     if not engine.rootObjects():
         sys.exit(-1)
