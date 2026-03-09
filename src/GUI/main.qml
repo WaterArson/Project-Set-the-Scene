@@ -25,6 +25,11 @@ Window {
             Layout.preferredHeight: parent.height * 0.1
         }
 
+        FileUploadButton {
+            id: fileUploadButton
+            Layout.preferredHeight: parent.height * 0.5
+        }
+
         RowLayout {
             id: contentRow
             Layout.preferredHeight: (parent.height * 0.9)
