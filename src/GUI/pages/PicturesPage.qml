@@ -26,6 +26,11 @@ Page {
             id: contentRow
             Layout.preferredHeight: parent.height * 0.9
             spacing: 0
+
+            FileUploadButton {
+                id: fileUploadButton
+                Layout.preferredHeight: contentRow.height * 0.5
+            }
         }
     }
 }
