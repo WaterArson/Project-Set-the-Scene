@@ -6,13 +6,15 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
 
-def start_display():
+def start_display(fileHandler):
     QQuickStyle.setStyle("Fusion")
 
     app = QGuiApplication(sys.argv)
 
     engine = QQmlApplicationEngine()
     engine.addImportPath(sys.path[0])
+
+    engine.rootContext().setContextProperty("fileHandler", fileHandler)
 
     qml_file = Path(__file__).parent / "pages" / "main.qml"
     engine.load(str(qml_file))
