@@ -35,11 +35,18 @@ Item {
         title: "Select an Image"
         //only allows certain file types in
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp)"]
-        fileMode: FileDialog.OpenFile
+
+
+        //allow multiple images to be uploaded (WIP)
+        fileMode: FileDialog.ExistingFiles
 
 
         onAccepted: {
-            r.imageSelected(selectedFile)
+            //allow multiple images to be uploaded (WIP)
+          for (var i = 0; i < selectedFiles.length; i++) {
+                fileHandler.save_image(selectedFiles[i])
+            }
         }
+
     }
 }
