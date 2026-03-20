@@ -3,6 +3,7 @@ import os
 import shutil
 from pathlib import Path
 import json
+from Utils import Utils
 
 #FileHandler used for management of folder where images are to be saved
 
@@ -56,8 +57,12 @@ class FileHandler (QObject):
     def get_tag_class_list(self):
         # Loads all tag classes in the tag direcotory and returns a dictionary of tag name to tag class
         tag_classes = {}
-        for file_path in Path('../tags').glob('*.py'):
-            tag_class = self._load_tag_class(file_path)
+
+        tags_dir = Path(__file__).parent.parent / 'tags'  # always points to src/tags
+
+        for file_path in tags_dir.glob('*.py'):
+            print(f"Found file: {file_path}", flush=True)
+            tag_class = Utils.get_class_from_file(file_path)
             if tag_class is not None:
                 tag_classes[tag_class.__name__] = tag_class
         return tag_classes
