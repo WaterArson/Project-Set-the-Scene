@@ -6,7 +6,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 
 
-def start_display(fileHandler, tagHandler):
+def start_display(fileHandler, tagHandler, wallpaperHandler):
     QQuickStyle.setStyle("Fusion")
 
     app = QGuiApplication(sys.argv)
@@ -16,6 +16,7 @@ def start_display(fileHandler, tagHandler):
 
     engine.rootContext().setContextProperty("fileHandler", fileHandler)
     engine.rootContext().setContextProperty("tagHandler", tagHandler)
+    engine.rootContext().setContextProperty("wallpaperHandler", wallpaperHandler)
 
     qml_file = Path(__file__).parent / "pages" / "main.qml"
     engine.load(str(qml_file))
@@ -25,4 +26,5 @@ def start_display(fileHandler, tagHandler):
 
     exit_code = app.exec()
     del engine
+    fileHandler.save_tag_json(tagHandler.tag_dictionary)
     sys.exit(exit_code)

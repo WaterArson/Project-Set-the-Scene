@@ -13,6 +13,7 @@ class WeatherTag:
         "Snow": range(600, 623)
     }
 
+    @classmethod
     def _get_weather(cls) -> dict:
         city = Utils.get_location() # get the users city based on their location
         params = {
@@ -24,6 +25,7 @@ class WeatherTag:
         response.raise_for_status()
         return response.json()
 
+    @classmethod
     def check(cls) -> str:
         data = cls._get_weather()
         condition_id = data["weather"][0]["id"] # get the weather condition id from the API response

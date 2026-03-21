@@ -13,7 +13,7 @@ class FileHandler (QObject):
         super().__init__()
         self.folder: str = ""
         self.ensure_image_folder_exists()
-        self.json_path = os.path.join(self.folder, "tags.json")
+        self.json_path = os.path.join(self.folder, "tags.json") # TODO: change this location to be in the new directory Jacob is working on
 
         #self refers to this instance of the FileHandler object
     #this function creates the folder SceneImages if it does not yet exist on user desktop

@@ -18,7 +18,6 @@ class TagHandler:
 
         self.tag_classes = tag_class_list
 
-        print(f"self.tag_classes: {self.tag_classes}", flush=True) # temp
 
         self._watchers = {}
         self.start_tag_watchers()
@@ -30,15 +29,12 @@ class TagHandler:
         else:
             raise ValueError(f"Tag '{tag}' does not exist in the tag dictionary.")
 
-    def start_tag_watchers(self, interval: int = 5):
+    def start_tag_watchers(self, interval: int = 60):
         for tag_name, tag_class in self.tag_classes.items():
-            print(f"Preparing to start watcher for tag: {tag_name}", flush=True) # temp
 
             if tag_name not in self.tag_dictionary:
                 continue
             
-            print(f"Starting watcher for tag: {tag_name}", flush=True) # temp
-
             thread = threading.Thread(
                 target=self._watch_tag,
                 args=(tag_class, tag_name, interval),
@@ -52,11 +48,15 @@ class TagHandler:
         tag_instance = tag_class()
         stop_event = threading.Event()
 
-        print(f"Checking tag: {tag_name}", flush=True) # temp
         while not stop_event.wait(interval):
             ids = self.tag_dictionary.get(tag_name, [])
             active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
             if active_tag:
                 self.active_tags.add(active_tag)
 
-            print(f"Checked tag: {tag_name}, active tags: {self.active_tags}", flush=True) # temp
+    def getActiveImageIDs(self):
+        active_image_ids = set()
+        for tag in self.active_tags:
+            ids = self.tag_dictionary.get(tag, [])
+            active_image_ids.update(ids)
+        return active_image_ids
