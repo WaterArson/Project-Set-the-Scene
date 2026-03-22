@@ -12,7 +12,7 @@ class WallpaperHandler:
 
         self._start_wallpaper_loop()
     
-    def _start_wallpaper_loop(self, interval: int = 5):
+    def _start_wallpaper_loop(self, interval: int = 60):
         thread = threading.Thread(
             target=self._wallpaper_loop,
             args=(interval,),
@@ -47,7 +47,7 @@ class WallpaperHandler:
 
     def _get_active_images(self) -> set:
         active_image_ids = self.tag_handler.getActiveImageIDs()
-        # TODO: implement a get images from list of ids
+        # TODO: implement a get images from list of ids (relient on Grace)
 
         return {"/home/r/Desktop/SceneImages/Monkey_D._Luffy_Anime_Post_Timeskip_Infobox.png"} # placehold (yes this is actually a picture of luffy I use as my wallpaper)
 

@@ -31,6 +31,21 @@ Page {
                 id: fileUploadButton
                 Layout.preferredHeight: contentRow.height * 0.5
             }
+
+            Button {
+                id: weatherTagButton
+                text: "Attach Weather Tag"
+
+                // plug these in from the parent
+                property int imageObj: 1
+                property string weatherSubtag: "Rain"  // "Rain", "Snow", "Thunderstorm"
+
+                onClicked: {
+                    if (imageObj && tagHandler) {
+                        tagHandler.attach_tag(imageObj, "WeatherTag", weatherSubtag)
+                    }
+                }
+            }
         }
     }
 }

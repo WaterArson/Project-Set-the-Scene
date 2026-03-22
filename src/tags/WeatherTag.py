@@ -6,7 +6,6 @@ class WeatherTag:
 
     # This contains all the weather conditions that we trigger on, and the lower threshold for each condition.
     # The numbers in these arrays correspond to the id's of weather conditions according to the API.
-    # TODO: Discuss whether we want to include all types or just a few (with it just internally grouping them)
     weather_tags = {
         "Rain": range(500, 532),
         "Thunderstorm": range(200, 233),

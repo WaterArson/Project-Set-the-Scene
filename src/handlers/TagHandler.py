@@ -2,9 +2,11 @@ import ast
 from handlers.FileHandler import FileHandler
 from pathlib import Path
 import threading
+from PySide6.QtCore import QObject, Slot
 
-class TagHandler:
+class TagHandler (QObject):
     def __init__(self, file_handler: FileHandler):
+        super().__init__()
         tag_json = file_handler.get_tag_json()
         tag_class_list = file_handler.get_tag_class_list()
 
@@ -12,22 +14,29 @@ class TagHandler:
         
         for tag in tag_class_list.keys():
             if tag not in tag_json:
-                tag_json[tag] = []
+                tag_json[tag] = {}
 
         self.tag_dictionary = tag_json
 
         self.tag_classes = tag_class_list
 
+        #create date tags from the dates in the tag json
+        DateTag = tag_class_list.get("DateTag")
+        if DateTag:
+            DateTag.add_dates(tag_json.get("DateTag", {}))
 
         self._watchers = {}
         self.start_tag_watchers()
 
-    def attach_tag(self, image_obj, tag):
-        if tag in self.tag_dictionary:
-            if image_obj.id not in self.tag_dictionary[tag]:
-                self.tag_dictionary[tag].append(image_obj.id)
-        else:
-            raise ValueError(f"Tag '{tag}' does not exist in the tag dictionary.")
+    @Slot(int, str, str) #TODO: swap int in pictures page to object when Grace is done
+    def attach_tag(self, image_obj, parent_tag, tag):
+        if parent_tag in self.tag_dictionary:
+
+            if tag not in self.tag_dictionary[parent_tag]:
+                self.tag_dictionary[parent_tag][tag] = []
+
+            if image_obj not in self.tag_dictionary[parent_tag][tag]:
+                self.tag_dictionary[parent_tag][tag].append(image_obj)
 
     def start_tag_watchers(self, interval: int = 60):
         for tag_name, tag_class in self.tag_classes.items():
@@ -54,9 +63,9 @@ class TagHandler:
             if active_tag:
                 self.active_tags.add(active_tag)
 
-    def getActiveImageIDs(self):
+    def getActiveImageIDs(self) -> set:
         active_image_ids = set()
-        for tag in self.active_tags:
-            ids = self.tag_dictionary.get(tag, [])
+        for parent_tag, subtag in self.active_tags:
+            ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
             active_image_ids.update(ids)
         return active_image_ids
