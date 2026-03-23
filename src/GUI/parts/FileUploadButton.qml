@@ -1,4 +1,4 @@
-import QtQuick
+  import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 //creation of separate folder called handlers

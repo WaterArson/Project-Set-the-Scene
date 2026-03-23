@@ -1,4 +1,4 @@
-import QtQuick
+  import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -26,11 +26,36 @@ Page {
             id: contentRow
             Layout.preferredHeight: parent.height * 0.9
             spacing: 0
-
-            FileUploadButton {
-                id: fileUploadButton
-                Layout.preferredHeight: contentRow.height * 0.5
+            Rectangle{
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                FileUploadButton {
+                    id: fileUploadButton
+                    Layout.preferredHeight: contentRow.height * 0.5
+                }
             }
+
+            Rectangle{
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                   ImageGallery {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                             onImageSelected: {
+                            console.log("Parent received image:", fileUrl)
+                            // Do whatever you want with the clicked image
+                            // e.g., show in a bigger view, upload, etc.
+                        }
+                    }
+
+                Loader {
+                id: fileLoader
+                source: "MyView.qml" // Predefined file
+                anchors.fill: parent
+
+            }
+        }
+
         }
     }
 }
