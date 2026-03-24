@@ -4,6 +4,8 @@ import shutil
 from pathlib import Path
 import json
 from Utils import Utils
+from src.GUI.parts.ImageObject import ImageObject
+
 
 #FileHandler used for management of folder where images are to be saved
 
@@ -27,16 +29,6 @@ class FileHandler (QObject):
         print("Creating folder at:", self.folder)
         #set existence of folder to true
         os.makedirs(self.folder, exist_ok=True)
-
-    #this function will allow for selected image to go into SceneImages folder
-    @Slot(str)
-    def save_image(self, file_url):
-        path = QUrl(file_url).toLocalFile()
-        file_name = os.path.basename(path)
-        destination = os.path.join(self.folder, file_name)
-        shutil.copy(path, destination)
-        #print so that user/dev knows image has been properly uploaded
-        print("Image saved to:", destination)
 
     def get_tag_json(self):
         json_file = Path(self.json_path)
@@ -66,3 +58,66 @@ class FileHandler (QObject):
             if tag_class is not None:
                 tag_classes[tag_class.__name__] = tag_class
         return tag_classes
+
+    def get_images(self) -> dict[int, ImageObject]:
+        """
+        Load all images from tags.json and return as ImageObject instances.
+        Keyed by image_id (int).
+        """
+        json_file = Path(self.json_path)
+        if not json_file.exists():
+            return {}  # No file yet, return empty dictionary
+
+        with open(json_file, "r") as f:
+            data = json.load(f)  # Load raw JSON data
+
+        images = {}
+        for img_id_str, img_data in data.items():
+            # Convert string keys from JSON back to integer IDs
+            img_id = int(img_id_str)
+            # Reconstruct ImageObject from stored dictionary
+            images[img_id] = ImageObject.from_dict(img_data)
+        return images
+
+    @Slot(str)
+    def save_image(self, file_url):
+        # Convert QUrl to local path
+        path = QUrl(file_url).toLocalFile()
+        file_name = os.path.basename(path)
+        destination = os.path.join(self.folder, file_name)
+
+        # Copy file to SceneImages folder
+        shutil.copy(path, destination)
+        print("Image saved to:", destination)
+
+        # --- Automatically add to JSON registry ---
+        # Determine a new image ID (use max existing ID + 1 or 1 if empty)
+        images = self.get_images()  # load current images
+        new_id = max(images.keys(), default=0) + 1
+
+        # Create new ImageObject with empty tags
+        img_obj = ImageObject(
+            image_id=new_id,
+            path=destination,
+            tags={}  # no tags yet
+        )
+
+        # Add to JSON
+        self.add_image(img_obj)
+        print(f"ImageObject added to JSON with ID {new_id}")
+
+    def add_image(self, image: ImageObject):
+        """
+        Add a single image to storage (updates if exists).
+        """
+        images = self.get_images()  # Load current images
+        images[image.image_id] = image  # Add or overwrite
+        self.save_image(images)  # Persist changes
+
+    def remove_image(self, image_id: int):
+        """
+        Remove an image by its ID if it exists.
+        """
+        images = self.get_images()  # Load current images
+        images.pop(image_id, None)  # Remove safely (ignore if missing)
+        self.save_image(images)  # Persist updated data
