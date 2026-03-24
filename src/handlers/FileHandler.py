@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 import json
 from Utils import Utils
-from src.GUI.parts.ImageObject import ImageObject
+from GUI.parts.ImageObject import ImageObject
 
 
 #FileHandler used for management of folder where images are to be saved
@@ -16,6 +16,14 @@ class FileHandler (QObject):
         self.folder: str = ""
         self.ensure_image_folder_exists()
         self.json_path = os.path.join(self.folder, "tags.json") # TODO: change this location to be in the new directory Jacob is working on
+        self.pictures_path = os.path.join(self.folder, "pictures.json")  # TODO: change this location to be in the new directory Jacob is working on
+
+        self.pictures = {}
+
+        pictures_file = Path(self.pictures_path)
+        if pictures_file.exists():
+            with open(pictures_file, "r") as file:
+                self.pictures = json.load(file)  # Load raw JSON data
 
         #self refers to this instance of the FileHandler object
     #this function creates the folder SceneImages if it does not yet exist on user desktop
@@ -64,15 +72,9 @@ class FileHandler (QObject):
         Load all images from tags.json and return as ImageObject instances.
         Keyed by image_id (int).
         """
-        json_file = Path(self.json_path)
-        if not json_file.exists():
-            return {}  # No file yet, return empty dictionary
-
-        with open(json_file, "r") as f:
-            data = json.load(f)  # Load raw JSON data
 
         images = {}
-        for img_id_str, img_data in data.items():
+        for img_id_str, img_data in self.pictures.items():
             # Convert string keys from JSON back to integer IDs
             img_id = int(img_id_str)
             # Reconstruct ImageObject from stored dictionary
@@ -85,10 +87,6 @@ class FileHandler (QObject):
         path = QUrl(file_url).toLocalFile()
         file_name = os.path.basename(path)
         destination = os.path.join(self.folder, file_name)
-
-        # Copy file to SceneImages folder
-        shutil.copy(path, destination)
-        print("Image saved to:", destination)
 
         # --- Automatically add to JSON registry ---
         # Determine a new image ID (use max existing ID + 1 or 1 if empty)
@@ -110,14 +108,29 @@ class FileHandler (QObject):
         """
         Add a single image to storage (updates if exists).
         """
-        images = self.get_images()  # Load current images
-        images[image.image_id] = image  # Add or overwrite
-        self.save_image(images)  # Persist changes
+
+        pictures_file = Path(self.pictures_path)
+
+        self.pictures[image.image_id] = image.to_dict()  # Add or overwrite
+
+        with open(pictures_file, 'w') as file:
+            json.dump(self.pictures, file)
 
     def remove_image(self, image_id: int):
         """
         Remove an image by its ID if it exists.
         """
-        images = self.get_images()  # Load current images
-        images.pop(image_id, None)  # Remove safely (ignore if missing)
-        self.save_image(images)  # Persist updated data
+        pictures_file = Path(self.pictures_path)
+
+        self.pictures.pop(image_id, None)
+
+        with open(pictures_file, 'w') as file:
+            json.dump(self.pictures, file)
+
+    def getActiveImagesFromIDs(self, image_ids: set[int]):
+        pictures_set = set()
+
+        for id in image_ids:
+            pictures_set.add(self.pictures[id])
+
+        return pictures_set

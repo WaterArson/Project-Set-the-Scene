@@ -35,8 +35,11 @@ class TagHandler (QObject):
             if tag not in self.tag_dictionary[parent_tag]:
                 self.tag_dictionary[parent_tag][tag] = []
 
+            if tag not in image_obj.tags:
+                image_obj.tags[tag] = { tag : 0 }
+
             if image_obj not in self.tag_dictionary[parent_tag][tag]:
-                self.tag_dictionary[parent_tag][tag].append(image_obj)
+                self.tag_dictionary[parent_tag][tag].append(image_obj.id)
 
     def start_tag_watchers(self, interval: int = 60):
         for tag_name, tag_class in self.tag_classes.items():

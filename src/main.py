@@ -7,5 +7,5 @@ if __name__ == "__main__":
     #checking if image folder exists, if it doesn't then make it
     fileHandler = FileHandler()
     tagHandler = TagHandler(fileHandler)
-    wallpaperHandler = WallpaperHandler(tagHandler)
+    wallpaperHandler = WallpaperHandler(tagHandler, fileHandler)
     gui.start_display(fileHandler, tagHandler, wallpaperHandler)

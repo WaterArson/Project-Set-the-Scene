@@ -7,8 +7,9 @@ import subprocess
 from pathlib import Path
 
 class WallpaperHandler:
-    def __init__(self, tag_handler):
+    def __init__(self, tag_handler, file_handler):
         self.tag_handler = tag_handler
+        self.file_handler = file_handler
 
         self._start_wallpaper_loop()
     
@@ -47,7 +48,7 @@ class WallpaperHandler:
 
     def _get_active_images(self) -> set:
         active_image_ids = self.tag_handler.getActiveImageIDs()
-        # TODO: implement a get images from list of ids (relient on Grace)
+        active_image_objs = self.file_handler.getActiveImagesFromIDs(active_image_ids)
 
-        return {"/home/r/Desktop/SceneImages/Monkey_D._Luffy_Anime_Post_Timeskip_Infobox.png"} # placehold (yes this is actually a picture of luffy I use as my wallpaper)
+        return active_image_objs
 
