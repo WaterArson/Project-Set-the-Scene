@@ -88,6 +88,9 @@ class FileHandler (QObject):
         file_name = os.path.basename(path)
         destination = os.path.join(self.folder, file_name)
 
+        # add file to directory
+        shutil.copy2(path, destination)
+
         # --- Automatically add to JSON registry ---
         # Determine a new image ID (use max existing ID + 1 or 1 if empty)
         images = self.get_images()  # load current images
@@ -128,9 +131,11 @@ class FileHandler (QObject):
             json.dump(self.pictures, file)
 
     def getActiveImagesFromIDs(self, image_ids: set[int]):
-        pictures_set = set()
+        pictures_set = []
 
         for id in image_ids:
-            pictures_set.add(self.pictures[id])
+            key = str(id)  # translate to string for JSON lookup
+            if key in self.pictures:
+                pictures_set.append(self.pictures[key])
 
         return pictures_set

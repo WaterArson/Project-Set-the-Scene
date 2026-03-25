@@ -25,10 +25,10 @@ class WeatherTag:
         return response.json()
 
     @classmethod
-    def check(cls) -> str:
+    def check(cls) -> tuple[str, str] | None:
         data = cls._get_weather()
         condition_id = data["weather"][0]["id"] # get the weather condition id from the API response
 
         for tag_name, id_range in cls.tags.items():
             if condition_id in id_range:
-                return tag_name  # e.g. "Rain", "Thunderstorm", "Snow"
+                return ("WeatherTag", tag_name)

@@ -1,13 +1,17 @@
 import ast
+from GUI.parts.ImageObject import ImageObject
+from Utils import Utils
 from handlers.FileHandler import FileHandler
 from pathlib import Path
 import threading
-from PySide6.QtCore import QObject, Slot, Property
+from PySide6.QtCore import QObject, QUrl, Slot, Property
 
 
 class TagHandler (QObject):
     def __init__(self, file_handler: FileHandler):
         super().__init__()
+        self.file_handler = file_handler
+
         tag_json = file_handler.get_tag_json()
         tag_class_list = file_handler.get_tag_class_list()
 
@@ -31,20 +35,31 @@ class TagHandler (QObject):
         self._watchers = {}
         self.start_tag_watchers()
 
-    @Slot(int, str, str) #TODO: swap int in pictures page to object when Grace is done
-    def attach_tag(self, image_obj, parent_tag, tag):
-        if parent_tag in self.tag_dictionary:
+    @Slot(str, str, str) #TODO: swap int in pictures page to object when Grace is done
+    def attach_tag(self, file_location, parent_tag, tag):
+        parent_tag = parent_tag + 'Tag' # add Tag suffix to match class names
+        clean_location = QUrl(file_location).toLocalFile() if file_location.startswith("file://") else file_location
 
-            if tag not in self.tag_dictionary[parent_tag]:
-                self.tag_dictionary[parent_tag][tag] = []
+        image_obj = None
+        for img in self.file_handler.get_images().values():
+            if img.path == clean_location:
+                image_obj = img
+                break
 
-            if tag not in image_obj.tags:
-                image_obj.tags[tag] = { tag : 0 }
+        if image_obj is None:
+            print(f"No image found for path: {file_location}")
+            return
 
-            if image_obj not in self.tag_dictionary[parent_tag][tag]:
-                self.tag_dictionary[parent_tag][tag].append(image_obj.id)
+        if parent_tag not in self.tag_dictionary:
+            return
 
-    def start_tag_watchers(self, interval: int = 60):
+        if tag not in self.tag_dictionary[parent_tag]:
+            self.tag_dictionary[parent_tag][tag] = []
+
+        if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
+            self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
+
+    def start_tag_watchers(self, interval: int = Utils.interval):
         for tag_name, tag_class in self.tag_classes.items():
 
             if tag_name not in self.tag_dictionary:
@@ -72,10 +87,10 @@ class TagHandler (QObject):
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()
         if len(self.active_tags) > 0:
-            for parent_tag in self.active_tags:
-                for subtag in parent_tag:
-                    ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
-                    active_image_ids.update(ids)
+            for parent_tag, subtag in self.active_tags:
+                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+                active_image_ids.update(ids)
+        print(f"Active image IDs: {active_image_ids}", flush=True)
         return active_image_ids
 
     def _prepare_dropdown_items(self):

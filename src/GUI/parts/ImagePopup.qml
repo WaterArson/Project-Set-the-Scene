@@ -44,6 +44,10 @@ Popup {
             id: optionsDropdown
             Layout.fillWidth: true
             model: tagHandler.dropdownItems
+            textRole: "subtag"
+
+            displayText: currentIndex >= 0 ? currentText : "Select a tag..."
+
             delegate: ItemDelegate {
                 width: parent.width
 
@@ -66,7 +70,10 @@ Popup {
             Button {
                 text: "Submit"
                 onClicked: {
+                    let selected = optionsDropdown.model[optionsDropdown.currentIndex]
+                    let path = popupRoot.folderPath + '/' + popupRoot.fileName
                     console.log("Submitted option:", optionsDropdown.currentText)
+                    tagHandler.attach_tag(path, selected["parent"], selected["subtag"])
                     popupRoot.close()
                 }
             }
