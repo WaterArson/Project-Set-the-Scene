@@ -6,7 +6,7 @@ class WeatherTag:
 
     # This contains all the weather conditions that we trigger on, and the lower threshold for each condition.
     # The numbers in these arrays correspond to the id's of weather conditions according to the API.
-    weather_tags = {
+    tags = {
         "Rain": range(500, 532),
         "Thunderstorm": range(200, 233),
         "Snow": range(600, 623)
@@ -29,6 +29,6 @@ class WeatherTag:
         data = cls._get_weather()
         condition_id = data["weather"][0]["id"] # get the weather condition id from the API response
 
-        for tag_name, id_range in cls.weather_tags.items():
+        for tag_name, id_range in cls.tags.items():
             if condition_id in id_range:
                 return tag_name  # e.g. "Rain", "Thunderstorm", "Snow"

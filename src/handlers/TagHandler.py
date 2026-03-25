@@ -2,7 +2,8 @@ import ast
 from handlers.FileHandler import FileHandler
 from pathlib import Path
 import threading
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Slot, Property
+
 
 class TagHandler (QObject):
     def __init__(self, file_handler: FileHandler):
@@ -11,7 +12,7 @@ class TagHandler (QObject):
         tag_class_list = file_handler.get_tag_class_list()
 
         self.active_tags = set() # set of tags that have met their threshold and should have their images displayed
-        
+
         for tag in tag_class_list.keys():
             if tag not in tag_json:
                 tag_json[tag] = {}
@@ -24,6 +25,8 @@ class TagHandler (QObject):
         DateTag = tag_class_list.get("DateTag")
         if DateTag:
             DateTag.add_dates(tag_json.get("DateTag", {}))
+
+        self._prepare_dropdown_items()
 
         self._watchers = {}
         self.start_tag_watchers()
@@ -46,7 +49,7 @@ class TagHandler (QObject):
 
             if tag_name not in self.tag_dictionary:
                 continue
-            
+
             thread = threading.Thread(
                 target=self._watch_tag,
                 args=(tag_class, tag_name, interval),
@@ -68,7 +71,24 @@ class TagHandler (QObject):
 
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()
-        for parent_tag, subtag in self.active_tags:
-            ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
-            active_image_ids.update(ids)
+        if len(self.active_tags) > 0:
+            for parent_tag in self.active_tags:
+                for subtag in parent_tag:
+                    ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+                    active_image_ids.update(ids)
         return active_image_ids
+
+    def _prepare_dropdown_items(self):
+        items = []
+        for tag_class_name, tag_class in self.tag_classes.items():
+            parent_name = tag_class_name.replace("Tag", "")  # strip "Tag"
+            items.append({'header': True, 'parent': parent_name, 'subtag': None})
+
+            subtags = getattr(tag_class, "tags", {})
+            for subtag in subtags.keys():
+                items.append({'header': False, 'parent': parent_name, 'subtag': subtag})
+        self._dropdown_items = items
+
+    @Property('QVariantList')
+    def dropdownItems(self):
+        return self._dropdown_items

@@ -29,6 +29,8 @@ class WallpaperHandler:
 
     def update_wallpaper(self, active_images: set):
         print(f"Active images: {active_images}", flush=True)
+        if len(active_images) < 1:
+            return
         image_path = str(Path(random.choice(list(active_images))).resolve())
         system = platform.system()
 

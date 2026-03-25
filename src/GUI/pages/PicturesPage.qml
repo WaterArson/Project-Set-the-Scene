@@ -29,6 +29,7 @@ Page {
             Rectangle{
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.preferredWidth: 1
                 FileUploadButton {
                     id: fileUploadButton
                     Layout.preferredHeight: contentRow.height * 0.5
@@ -38,7 +39,9 @@ Page {
             Rectangle{
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.preferredWidth: 5
                    ImageGallery {
+                        anchors.centerIn: parent
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                              onImageSelected: {
@@ -54,6 +57,12 @@ Page {
                 anchors.fill: parent
 
             }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredWidth: 1
         }
 
         }

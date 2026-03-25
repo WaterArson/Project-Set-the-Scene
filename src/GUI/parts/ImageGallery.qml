@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import Qt.labs.folderlistmodel 2.15
 import QtCore
 
+import "../styles"
+
 ColumnLayout {
     id: galleryRoot
     property bool galleryVisible: false
@@ -11,6 +13,12 @@ ColumnLayout {
     property string selectedImage: ""
     signal imageSelected(string fileUrl)
 
+
+    ImagePopup{
+        id: imagePopup
+        x: (galleryRoot.width - width) / 2
+        y: (galleryRoot.height - height) / 2
+    }
 
     FolderListModel {
         id: folderModel
@@ -27,6 +35,7 @@ ColumnLayout {
             text: "View Images"
             Layout.preferredHeight: 40
            // Layout.preferredWidth: 150
+            Layout.alignment: Qt.AlignHCenter
 
             background: Rectangle {
                 color: "#90EE90"
@@ -53,6 +62,8 @@ ColumnLayout {
             model: folderModel
             cellWidth: width > 0 ? width / columns : 200
             cellHeight: 220
+
+            flow: GridView.FlowLeftToRight
 
             delegate: Item {
                 width: imageViewer.cellWidth
@@ -89,7 +100,11 @@ ColumnLayout {
                     onClicked: {
                         galleryRoot.selectedImage = folderModel.folder + "/" + fileName
                         galleryRoot.imageSelected(galleryRoot.selectedImage)
-                        console.log("Clicked:", galleryRoot.selectedImage)
+
+                        imagePopup.folderPath = folderModel.folder
+                        imagePopup.fileName = fileName
+
+                        imagePopup.open()
                     }
 
                     onEntered: parent.scale = 1.05
