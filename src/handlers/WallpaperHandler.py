@@ -36,7 +36,7 @@ class WallpaperHandler:
         if len(active_images) < 1:
             return
         image = random.choice(active_images)
-        image_path = image["path"]
+        image_path = str(image["path"])
         system = platform.system()
 
         try:

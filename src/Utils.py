@@ -8,7 +8,7 @@ import os
 
 class Utils:
     location_api_url = "https://ipinfo.io/json"
-    interval = 60 # interval in seconds for checking tags and updating wallpaper
+    interval = 5 # interval in seconds for checking tags and updating wallpaper
 
     @classmethod
     def get_location(cls) -> str:

@@ -35,14 +35,18 @@ class TagHandler (QObject):
         self._watchers = {}
         self.start_tag_watchers()
 
-    @Slot(str, str, str) #TODO: swap int in pictures page to object when Grace is done
+    @Slot(str, str, str)
     def attach_tag(self, file_location, parent_tag, tag):
         parent_tag = parent_tag + 'Tag' # add Tag suffix to match class names
         clean_location = QUrl(file_location).toLocalFile() if file_location.startswith("file://") else file_location
+        clean_location = Path(clean_location).resolve()
 
         image_obj = None
+        print(f"pictures: {self.file_handler.get_images().values()}\n clean_url; {clean_location}")
         for img in self.file_handler.get_images().values():
-            if img.path == clean_location:
+            clean_file_location = Path(Path(img.path).resolve()).resolve()
+            print(f"File: {clean_file_location}\n Clean: {clean_location} \n Equal? {clean_file_location == clean_location}")
+            if  clean_file_location == clean_location:
                 image_obj = img
                 break
 

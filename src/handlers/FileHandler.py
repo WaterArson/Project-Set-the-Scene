@@ -23,7 +23,7 @@ class FileHandler (QObject):
         pictures_file = Path(self.pictures_path)
         if pictures_file.exists():
             with open(pictures_file, "r") as file:
-                self.pictures = json.load(file)  # Load raw JSON data
+                self.pictures = json.load(file) # Load raw JSON data
 
         #self refers to this instance of the FileHandler object
     #this function creates the folder SceneImages if it does not yet exist on user desktop
@@ -86,7 +86,8 @@ class FileHandler (QObject):
         # Convert QUrl to local path
         path = QUrl(file_url).toLocalFile()
         file_name = os.path.basename(path)
-        destination = os.path.join(self.folder, file_name)
+        destination = Path(self.folder) / file_name
+        destination = destination.resolve()
 
         # add file to directory
         shutil.copy2(path, destination)
@@ -133,9 +134,9 @@ class FileHandler (QObject):
     def getActiveImagesFromIDs(self, image_ids: set[int]):
         pictures_set = []
 
+        print(self.pictures)
         for id in image_ids:
-            key = str(id)  # translate to string for JSON lookup
-            if key in self.pictures:
-                pictures_set.append(self.pictures[key])
+            if id in self.pictures:
+                pictures_set.append(self.pictures[id])
 
         return pictures_set
