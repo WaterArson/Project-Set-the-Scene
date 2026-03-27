@@ -49,8 +49,8 @@ class ImageObject:
     def to_dict(self) -> dict:
         # Serialize to dict for JSON storage
         return {
-            "image_id": self.image_id,
-            "path": self.path,
+            "image_id": int(self.image_id),
+            "path": str(self.path),
             "tags": self.tags
         }
 

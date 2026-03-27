@@ -38,7 +38,7 @@ Item {
 
 
         //allow multiple images to be uploaded (WIP)
-        fileMode: FileDialog.ExistingFiles
+        fileMode: FileDialog.OpenFiles
 
 
         onAccepted: {

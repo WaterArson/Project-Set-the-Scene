@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, QStandardPaths, Slot, QUrl
+from PySide6.QtCore import QObject, QStandardPaths, Slot, QUrl, QCoreApplication
 import os
 import shutil
 from pathlib import Path
@@ -29,10 +29,10 @@ class FileHandler (QObject):
     #this function creates the folder SceneImages if it does not yet exist on user desktop
     def ensure_image_folder_exists(self):
         #folder created directly on desktop
-        desktop_path = QStandardPaths.writableLocation(QStandardPaths.DesktopLocation)
+        project_path = QCoreApplication.applicationDirPath()
 
         #folder path name/set up
-        self.folder = os.path.join(desktop_path, "SceneImages")
+        self.folder = os.path.join(project_path, "SceneImages")
         #print to let user/dev know that folder is being created
         print("Creating folder at:", self.folder)
         #set existence of folder to true
@@ -83,6 +83,7 @@ class FileHandler (QObject):
 
     @Slot(str)
     def save_image(self, file_url):
+        print(f"image list: {file_url}")
         # Convert QUrl to local path
         path = QUrl(file_url).toLocalFile()
         file_name = os.path.basename(path)

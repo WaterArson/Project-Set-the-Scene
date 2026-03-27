@@ -22,7 +22,7 @@ ColumnLayout {
 
     FolderListModel {
         id: folderModel
-        folder: StandardPaths.writableLocation(StandardPaths.DesktopLocation) + "/SceneImages"
+        folder: Qt.resolvedUrl("../../SceneImages")
         nameFilters: ["*.png","*.jpg","*.jpeg","*.bmp"]
         showDirs: false
     }
