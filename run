@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -e
+
+SRC=$(find . -type d -name "src" -not -path "./.venv/*" | head -1)
+
+if [[ -z "$SRC" ]]; then
+    echo "Could not find src folder"
+    exit 1
+fi
+
+python3 "$SRC/main.py"
