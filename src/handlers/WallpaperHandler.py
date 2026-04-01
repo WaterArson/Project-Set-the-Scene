@@ -11,13 +11,15 @@ from pathlib import Path
 from Utils import Utils
 
 class WallpaperHandler:
-    def __init__(self, tag_handler, file_handler):
+    def __init__(self, tag_handler, file_handler, settings_handler):
         self.tag_handler = tag_handler
         self.file_handler = file_handler
+        self.settings_handler = settings_handler
 
         self._start_wallpaper_loop()
     
-    def _start_wallpaper_loop(self, interval: int = Utils.interval):
+    def _start_wallpaper_loop(self):
+        interval = self.settings_handler.getFrequency  # get the interval from settings handler
         thread = threading.Thread(
             target=self._wallpaper_loop,
             args=(interval,),

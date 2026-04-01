@@ -117,6 +117,18 @@ Rectangle {
                     }
 
                 }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    Button {
+                        text: "Settings"
+
+                        onPressed: stackView.push('../pages/SettingsPage.qml')
+                    }
+
+                }
             }
         }
     }

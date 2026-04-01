@@ -14,12 +14,16 @@ class FileHandler (QObject):
     uploadComplete = Signal() # enable refresh of gallery
 
 
-    def __init__(self):
+    def __init__(self, settingsHandler):
         super().__init__()
+
+        self.settingsHandler = settingsHandler
+
         self.folder: str = ""
         self.ensure_image_folder_exists()
-        self.json_path = os.path.join(self.folder, "tags.json") # TODO: change this location to be in the new directory Jacob is working on
-        self.pictures_path = os.path.join(self.folder, "pictures.json")  # TODO: change this location to be in the new directory Jacob is working on
+        self.json_path = os.path.join(self.folder, "tags.json")
+        self.pictures_path = os.path.join(self.folder, "pictures.json")
+        self.settings_path = os.path.join(self.folder, "settings.json")
 
         self.pictures = {}
 
@@ -27,6 +31,8 @@ class FileHandler (QObject):
         if pictures_file.exists():
             with open(pictures_file, "r") as file:
                 self.pictures = json.load(file) # Load raw JSON data
+
+        self.load_settings()
 
         #self refers to this instance of the FileHandler object
     #this function creates the folder SceneImages if it does not yet exist on user desktop
@@ -153,3 +159,26 @@ class FileHandler (QObject):
         path = "file:///" + self.folder.replace("\\", "/")
         print(f"folderPath: {path}")
         return path
+
+    # Loads user settings from a JSON file
+    def load_settings(self):
+        settings_file = Path(self.settings_path)
+        if settings_file.exists():
+            with open(settings_file, "r") as file:
+                settings = json.load(file)
+            self.settingsHandler.interval = settings.get("interval", self.settingsHandler.interval)
+        else:
+            settings = {
+                "interval": self.settingsHandler.interval,
+            }
+            with open(self.settings_path, "w") as file:
+                json.dump(settings, file)
+
+    # Saves user settings to a JSON file
+    @Slot()
+    def save_settings(self):
+        settings = {
+            "interval": self.settingsHandler.interval,
+        }
+        with open(self.settings_path, "w") as file:
+            json.dump(settings, file)

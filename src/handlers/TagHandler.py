@@ -5,13 +5,15 @@ from handlers.FileHandler import FileHandler
 from pathlib import Path
 import threading
 from PySide6.QtCore import QObject, QUrl, Slot, Property
+from handlers.SettingsHandler import SettingsHandler
 
 
 class TagHandler (QObject):
-    def __init__(self, file_handler: FileHandler):
+    def __init__(self, file_handler: FileHandler, settings_handler: SettingsHandler):
         super().__init__()
         self.file_handler = file_handler
-
+        self.settings_handler = settings_handler
+    
         tag_json = file_handler.get_tag_json()
         tag_class_list = file_handler.get_tag_class_list()
 
@@ -63,7 +65,9 @@ class TagHandler (QObject):
         if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
             self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
 
-    def start_tag_watchers(self, interval: int = Utils.interval):
+    def start_tag_watchers(self):
+        interval = self.settings_handler.getFrequency  # get the interval from settings handler
+
         for tag_name, tag_class in self.tag_classes.items():
 
             if tag_name not in self.tag_dictionary:
