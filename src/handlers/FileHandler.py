@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, QStandardPaths, Slot, QUrl, QCoreApplication
+from PySide6.QtCore import QObject, QStandardPaths, Slot, QUrl, QCoreApplication, Signal, Property
 import os
 import shutil
 from pathlib import Path
@@ -10,6 +10,9 @@ from GUI.parts.ImageObject import ImageObject
 #FileHandler used for management of folder where images are to be saved
 
 class FileHandler (QObject):
+
+    uploadComplete = Signal() # enable refresh of gallery
+
 
     def __init__(self):
         super().__init__()
@@ -28,8 +31,8 @@ class FileHandler (QObject):
         #self refers to this instance of the FileHandler object
     #this function creates the folder SceneImages if it does not yet exist on user desktop
     def ensure_image_folder_exists(self):
-        #folder created directly on desktop
-        project_path = QCoreApplication.applicationDirPath()
+        #folder created directly in app data
+        project_path = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
 
         #folder path name/set up
         self.folder = os.path.join(project_path, "SceneImages")
@@ -93,6 +96,9 @@ class FileHandler (QObject):
         # add file to directory
         shutil.copy2(path, destination)
 
+        # refresh gallery
+        self.uploadComplete.emit()
+
         # --- Automatically add to JSON registry ---
         # Determine a new image ID (use max existing ID + 1 or 1 if empty)
         images = self.get_images()  # load current images
@@ -141,3 +147,9 @@ class FileHandler (QObject):
                 pictures_set.append(self.pictures[id])
 
         return pictures_set
+    
+    @Property(str, constant=True)
+    def folderPath(self):
+        path = "file:///" + self.folder.replace("\\", "/")
+        print(f"folderPath: {path}")
+        return path

@@ -10,6 +10,7 @@ def start_display(fileHandler, tagHandler, wallpaperHandler):
     QQuickStyle.setStyle("Fusion")
 
     app = QGuiApplication(sys.argv)
+    app.setApplicationName("SetTheScene")
 
     engine = QQmlApplicationEngine()
     engine.addImportPath(sys.path[0])

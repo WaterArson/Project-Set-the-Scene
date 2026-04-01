@@ -20,15 +20,19 @@ ColumnLayout {
         y: (galleryRoot.height - height) / 2
     }
 
+    Connections {
+        target: fileHandler
+        function onUploadComplete() {
+            folderModel.folder = fileHandler.folderPath
+        }
+    }
+
     FolderListModel {
         id: folderModel
-        folder: Qt.resolvedUrl("../../SceneImages")
+        folder: fileHandler.folderPath
         nameFilters: ["*.png","*.jpg","*.jpeg","*.bmp"]
         showDirs: false
     }
-
-
-
 
         // BUTTON
         Button {
