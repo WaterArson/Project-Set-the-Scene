@@ -26,7 +26,7 @@ Page {
             GridLayout {
                 id: settingsGrid
                 width: parent.width
-                columns: 2
+                columns: 1
                 columnSpacing: 20
                 rowSpacing: 20
 
@@ -55,6 +55,78 @@ Page {
                                         text: settingsHandler.getFrequency
                                         implicitWidth: 120
                                     }
+                                    Button {
+                                        text: "Submit"
+                                        onClicked: {
+                                            settingsHandler.setFrequency(parseInt(frequencyField.text))
+                                            fileHandler.save_settings()
+                                            frequencyField.text = settingsHandler.getFrequency
+                                        }
+                                    }
+                                    Button {
+                                        text: "Default"
+                                        onClicked: {
+                                            settingsHandler.setFrequency(settingsHandler.defaultFrequency)
+                                            fileHandler.save_settings()
+                                            frequencyField.text = settingsHandler.getFrequency
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                //Change Priority Setting
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 80
+                    radius: 8
+                    color: "#1e2a3a"
+                    ColumnLayout {
+                        anchors.fill: parent
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            ColumnLayout {
+                                Text { text: "Priority"; font.bold: true }
+                                Text { text: "Changes the order in which tags are applied" }
+                            }
+
+                            ColumnLayout {
+                                spacing: 4
+                                RowLayout {
+                                    spacing: 8
+
+                                    //dropdown of tags
+                                    ComboBox {
+                                        id: priorityTags
+                                        model: tagHandler.dropdownItems
+                                        textRole: "subtag"
+
+                                        displayText: currentIndex >= 0 ? currentText : "Select a tag..."
+
+                                        delegate: ItemDelegate {
+                                            width: parent.width
+
+                                            // allows for header groups in dropdown
+                                            visible: true
+                                            enabled: !modelData["header"]
+
+                                            contentItem: Text {
+                                                text: modelData["header"] ? modelData["parent"] : "    " + modelData["subtag"]
+                                                font.bold: modelData["header"]
+                                                color: modelData["header"] ? "gray" : "black"
+                                            }
+                                        }
+                                    }
+
+                                    //Text to input priority TODO: finish priority python code before this
+                                    //TextField {
+                                    //    id: prioritySet
+                                    //    text: settingsHandler.getPriority
+                                    //    implicitWidth: 120
+                                    //}
                                     Button {
                                         text: "Submit"
                                         onClicked: {
