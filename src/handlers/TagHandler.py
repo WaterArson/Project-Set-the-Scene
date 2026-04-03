@@ -16,6 +16,7 @@ class TagHandler (QObject):
         tag_class_list = file_handler.get_tag_class_list()
 
         self.active_tags = set() # set of tags that have met their threshold and should have their images displayed
+        self._lock = threading.Lock()  #protect shared state across the threads
 
         for tag in tag_class_list.keys():
             if tag not in tag_json:
@@ -63,6 +64,14 @@ class TagHandler (QObject):
         if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
             self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
 
+        # now storing tag inside ImageObject as well as list
+        image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
+        # maintain the updated image
+        self.file_handler.add_image(image_obj)
+
+        # used so tags don't disappear on reboot
+        self.file_handler.save_tag_json(self.tag_dictionary)
+
     def start_tag_watchers(self, interval: int = Utils.interval):
         for tag_name, tag_class in self.tag_classes.items():
 
@@ -83,17 +92,31 @@ class TagHandler (QObject):
         stop_event = threading.Event()
 
         while not stop_event.wait(interval):
-            ids = self.tag_dictionary.get(tag_name, [])
+            # if you're missing something, it's because I dropped the old ids lookup
+
             active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
             if active_tag:
-                self.active_tags.add(active_tag)
+                with self._lock:  # ensuring thread safety, avoiding lost data
+                    # flushing out old tags of same type (fix for date not clearing)
+                    self.active_tags = {
+                        tag for tag in self.active_tags if tag[0] != tag_name
+                    }
+
+                    self.active_tags.add(active_tag)
 
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()
-        if len(self.active_tags) > 0:
-            for parent_tag, subtag in self.active_tags:
+
+        # using lock to avoid "race conditions"
+        # we love _lock!
+        with self._lock:
+            active_tags_snapshot = set(self.active_tags)
+
+        if len(active_tags_snapshot) > 0:
+            for parent_tag, subtag in active_tags_snapshot:
                 ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
                 active_image_ids.update(ids)
+
         print(f"Active image IDs: {active_image_ids}", flush=True)
         return active_image_ids
 
