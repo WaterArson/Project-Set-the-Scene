@@ -119,3 +119,26 @@ class TagHandler (QObject):
     @Property('QVariantList')
     def dropdownItems(self):
         return self._dropdown_items
+    
+    @Slot(str, 'QVariantList', result=bool)
+    def imageHasTags(self, file_url, selected_tags) -> bool:
+        clean_location = QUrl(file_url).toLocalFile() if file_url.startswith("file://") else file_url
+        clean_location = Path(clean_location).resolve()
+
+        image_obj = None
+        for img in self.file_handler.get_images().values():
+            if Path(img.path).resolve() == clean_location:
+                image_obj = img
+                break
+
+        if image_obj is None:
+            return False
+
+        for tag in selected_tags:
+            parent_tag = tag["parent"] + "Tag"
+            subtag = tag["subtag"]
+            ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+            if image_obj.image_id not in ids:
+                return False
+
+        return True
