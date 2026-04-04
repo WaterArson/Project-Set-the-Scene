@@ -34,8 +34,13 @@ class TagHandler (QObject):
 
         self._prepare_dropdown_items()
 
-        self._watchers = {}
+        self._sleep_event = threading.Event()
+        self.settings_handler.frequencyChanged.connect(self._on_frequency_changed)
         self.start_tag_watchers()
+
+    def _on_frequency_changed(self):
+        print(f"_on_frequency_changed called, new frequency: {self.settings_handler.getFrequency}")
+        self._sleep_event.set()
 
     @Slot(str, str, str)
     def attach_tag(self, file_location, parent_tag, tag):
@@ -66,31 +71,30 @@ class TagHandler (QObject):
             self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
 
     def start_tag_watchers(self):
-        interval = self.settings_handler.getFrequency  # get the interval from settings handler
-
-        for tag_name, tag_class in self.tag_classes.items():
-
-            if tag_name not in self.tag_dictionary:
-                continue
-
-            thread = threading.Thread(
-                target=self._watch_tag,
-                args=(tag_class, tag_name, interval),
-                daemon=True # turns off when the application is closed
-            )
-            self._watchers[tag_name] = thread
-            thread.start()
+        thread = threading.Thread(target=self._watch_tags, daemon=True)
+        self._watcher_thread = thread
+        thread.start()
 
 
-    def _watch_tag(self, tag_class, tag_name: str, interval: int):
-        tag_instance = tag_class()
-        stop_event = threading.Event()
+    def _watch_tags(self):
+        tag_instances = {
+            tag_name: tag_class()
+            for tag_name, tag_class in self.tag_classes.items()
+            if tag_name in self.tag_dictionary
+        }
 
-        while not stop_event.wait(interval):
-            ids = self.tag_dictionary.get(tag_name, [])
-            active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
-            if active_tag:
-                self.active_tags.add(active_tag)
+        while True:
+            self._sleep_event.clear()
+            print(f"sleeping for {self.settings_handler.getFrequency} seconds")
+            self._sleep_event.wait(timeout=self.settings_handler.getFrequency)
+            print(f"woke up")
+
+            for tag_name, tag_instance in tag_instances.items():
+                active_tag = tag_instance.check()
+                if active_tag:
+                    self.active_tags.add(active_tag)
+                else:
+                    self.active_tags.discard(active_tag)
 
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()

@@ -16,20 +16,25 @@ class WallpaperHandler:
         self.file_handler = file_handler
         self.settings_handler = settings_handler
 
+        self._sleep_event = threading.Event()
+        self.settings_handler.frequencyChanged.connect(self._on_frequency_changed)
+
         self._start_wallpaper_loop()
+
+    def _on_frequency_changed(self):
+        self._sleep_event.set()
     
     def _start_wallpaper_loop(self):
-        interval = self.settings_handler.getFrequency  # get the interval from settings handler
         thread = threading.Thread(
             target=self._wallpaper_loop,
-            args=(interval,),
             daemon=True
         )
         thread.start()
 
-    def _wallpaper_loop(self, interval: int):
-        stop_event = threading.Event()
-        while not stop_event.wait(interval):
+    def _wallpaper_loop(self):
+        while True:
+            self._sleep_event.clear()
+            self._sleep_event.wait(timeout=self.settings_handler.getFrequency)
             active_images = self._get_active_images()
             self.update_wallpaper(active_images)
 
