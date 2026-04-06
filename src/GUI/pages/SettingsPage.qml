@@ -119,28 +119,47 @@ Page {
                                                 color: modelData["header"] ? "gray" : "black"
                                             }
                                         }
+
+                                        onCurrentIndexChanged: {
+                                            let item = tagHandler.dropdownItems[currentIndex]
+
+                                            if (item && !item.header) {
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
+                                        }
                                     }
 
                                     //Text to input priority TODO: finish priority python code before this
-                                    //TextField {
-                                    //    id: prioritySet
-                                    //    text: settingsHandler.getPriority
-                                    //    implicitWidth: 120
-                                    //}
+                                    SpinBox {
+                                        id: priorityField
+                                        from: 1
+                                        to: 10
+                                        stepSize: 1
+                                        value: 5
+                                        editable: true
+                                    }
+
                                     Button {
                                         text: "Submit"
                                         onClicked: {
-                                            settingsHandler.setFrequency(parseInt(frequencyField.text))
-                                            fileHandler.save_settings()
-                                            frequencyField.text = settingsHandler.getFrequency
+                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                            if (item && !item.header) {
+                                                settingsHandler.setPriority(priorityField.value, item.subtag)
+                                                fileHandler.save_settings()
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
                                         }
                                     }
+
                                     Button {
                                         text: "Default"
                                         onClicked: {
-                                            settingsHandler.setFrequency(settingsHandler.defaultFrequency)
-                                            fileHandler.save_settings()
-                                            frequencyField.text = settingsHandler.getFrequency
+                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                            if (item && !item.header) {
+                                                settingsHandler.setPriority(settingsHandler.defaultPriority, item.subtag)
+                                                fileHandler.save_settings()
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
                                         }
                                     }
                                 }

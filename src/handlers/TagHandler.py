@@ -24,6 +24,7 @@ class TagHandler (QObject):
                 tag_json[tag] = {}
 
         self.tag_dictionary = tag_json
+        self._normalize_tag_data()
 
         self.tag_classes = tag_class_list
 
@@ -32,10 +33,32 @@ class TagHandler (QObject):
         if DateTag:
             DateTag.add_dates(tag_json.get("DateTag", {}))
 
+        self.default_priority = self.settings_handler.defaultPriority
+
         self._prepare_dropdown_items()
 
         self._watchers = {}
         self.start_tag_watchers()
+
+    def get_tag_names(self):
+        return self.tag_classes.keys()
+                    
+
+    def _normalize_tag_data(self):
+        for parent_tag, subtags in self.tag_dictionary.items():
+            for tag, data in list(subtags.items()):
+                if isinstance(data, list):
+                    self.tag_dictionary[parent_tag][tag] = {
+                        "images": data,
+                        "priority": self.default_priority
+                    }
+                else:
+                    #Ensure keys exist
+                    data.setdefault("images", [])
+                    if "priority" not in data:  
+                        data["priority"] = self.default_priority
+                    else:
+                        data["priority"] = int(data["priority"])
 
     @Slot(str, str, str)
     def attach_tag(self, file_location, parent_tag, tag):
@@ -60,10 +83,26 @@ class TagHandler (QObject):
             return
 
         if tag not in self.tag_dictionary[parent_tag]:
-            self.tag_dictionary[parent_tag][tag] = []
+            self.tag_dictionary[parent_tag][tag] = {
+                "images": [],
+                "priority": int(self.settings_handler.defaultPriority)
+            }
 
-        if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
-            self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
+        if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]["images"]:
+            self.tag_dictionary[parent_tag][tag]["images"].append(image_obj.image_id)
+
+    #sets the priority of a tag
+    def set_tag_priority(self, parent_tag, tag, priority):
+        parent_tag = parent_tag + "Tag"
+
+        if parent_tag in self.tag_dictionary and tag in self.tag_dictionary[parent_tag]:
+            self.tag_dictionary[parent_tag][tag]["priority"] = priority
+
+    #gets the priority of a tag
+    def get_tag_priority(self, parent_tag, tag):
+        parent_tag = parent_tag + "Tag"
+
+        return self.tag_dictionary.get(parent_tag, {}).get(tag, {}).get("priority", 0)
 
     def start_tag_watchers(self):
         interval = self.settings_handler.getFrequency  # get the interval from settings handler
@@ -87,16 +126,24 @@ class TagHandler (QObject):
         stop_event = threading.Event()
 
         while not stop_event.wait(interval):
-            ids = self.tag_dictionary.get(tag_name, [])
-            active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
-            if active_tag:
-                self.active_tags.add(active_tag)
+            for subtag, data in self.tag_dictionary.get(tag_name, {}).items():
+                priority = data.get("priority", 0)
+
+                # each tag class will have a check function that checks if internal conditions have been met
+                if tag_instance.check(subtag, priority): 
+                    self.active_tags.add((tag_name, subtag))
+
+                    
+        #    ids = self.tag_dictionary.get(tag_name, [])
+        #    active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
+        #    if active_tag:
+        #        self.active_tags.add(active_tag)
 
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()
         if len(self.active_tags) > 0:
             for parent_tag, subtag in self.active_tags:
-                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, []).get("images", [])
                 active_image_ids.update(ids)
         print(f"Active image IDs: {active_image_ids}", flush=True)
         return active_image_ids

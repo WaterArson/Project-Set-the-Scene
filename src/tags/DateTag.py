@@ -13,14 +13,14 @@ class DateTag:
     }
 
     @classmethod
-    def check(cls) -> tuple[str, str] | None:
+    def check(self, subtag: str, priority: int) -> tuple[str, str] | None:
         today = datetime.now()
         month, day = today.month, today.day
 
-        # check dates
-        for tag_name, date in cls.tags.items():
-            if date == f"{month:02d}/{day:02d}":
-                return ("DateTag", tag_name)
+        if self._condition_met(subtag, priority):
+            return ("WeatherTag", subtag)
+        
+        return None
 
     @staticmethod
     def add_dates(new_dates: dict):
