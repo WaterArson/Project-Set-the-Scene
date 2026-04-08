@@ -18,6 +18,7 @@ class TagHandler (QObject):
         tag_class_list = file_handler.get_tag_class_list()
 
         self.active_tags = set() # set of tags that have met their threshold and should have their images displayed
+        self._lock = threading.Lock()  #protect shared state across the threads
 
         for tag in tag_class_list.keys():
             if tag not in tag_json:
@@ -70,6 +71,69 @@ class TagHandler (QObject):
         if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
             self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
 
+        # now storing tag inside ImageObject as well as list
+        image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
+        # maintain the updated image
+        self.file_handler.add_image(image_obj)
+
+        # used so tags don't disappear on reboot
+        self.file_handler.save_tag_json(self.tag_dictionary)
+
+    # NEW: Batch tagging for multiple images and multiple tags
+    @Slot('QVariantList', 'QVariantList')
+    def attach_tags_batch(self, file_locations, tag_pairs):
+        """
+        Attach multiple tags to multiple images in one operation.
+
+        file_locations: list[str]
+        tag_pairs: list[{"parent": str, "subtag": str}]
+        """
+
+        images = self.file_handler.get_images()
+
+        # NEW: build fast lookup map (path -> ImageObject) to avoid repeated linear scans
+        path_map = {}
+        for img in images.values():
+            resolved = Path(img.path).resolve()
+            path_map[resolved] = img
+
+        for file_location in file_locations:
+            clean_location = (
+                QUrl(file_location).toLocalFile()
+                if file_location.startswith("file://")
+                else file_location
+            )
+            clean_location = Path(clean_location).resolve()
+
+            image_obj = path_map.get(clean_location)
+
+            if image_obj is None:
+                print(f"No image found for path: {file_location}")
+                continue
+
+            for pair in tag_pairs:
+                parent_tag = pair["parent"] + "Tag"
+                tag = pair["subtag"]
+
+                if parent_tag not in self.tag_dictionary:
+                    continue
+
+                if tag not in self.tag_dictionary[parent_tag]:
+                    self.tag_dictionary[parent_tag][tag] = []
+
+                if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
+                    self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
+
+                # NEW: also update ImageObject tags
+                image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
+
+            # NEW: persist updated image once per image
+            self.file_handler.add_image(image_obj)
+
+        # NEW: persist tag dictionary once after batch
+        self.file_handler.save_tag_json(self.tag_dictionary)
+
+
     def start_tag_watchers(self):
         thread = threading.Thread(target=self._watch_tags, daemon=True)
         self._watcher_thread = thread
@@ -98,10 +162,17 @@ class TagHandler (QObject):
 
     def getActiveImageIDs(self) -> set:
         active_image_ids = set()
-        if len(self.active_tags) > 0:
-            for parent_tag, subtag in self.active_tags:
+
+        # using lock to avoid "race conditions"
+        # we love _lock!
+        with self._lock:
+            active_tags_snapshot = set(self.active_tags)
+
+        if len(active_tags_snapshot) > 0:
+            for parent_tag, subtag in active_tags_snapshot:
                 ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
                 active_image_ids.update(ids)
+
         print(f"Active image IDs: {active_image_ids}", flush=True)
         return active_image_ids
 
@@ -113,7 +184,8 @@ class TagHandler (QObject):
 
             subtags = getattr(tag_class, "tags", {})
             for subtag in subtags.keys():
-                items.append({'header': False, 'parent': parent_name, 'subtag': subtag})
+                # NEW: add selected flag for multi-select UI
+                items.append({'header': False, 'parent': parent_name, 'subtag': subtag, 'selected': False})
         self._dropdown_items = items
 
     @Property('QVariantList')

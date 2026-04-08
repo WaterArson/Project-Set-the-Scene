@@ -9,7 +9,10 @@ class DateTag:
         "New Year's Eve": "12/31",
         "Thanksgiving": "11/28",
         "Valentine's Day": "02/14",
-        "03/25": "03/25"
+        "03/25": "03/25",
+        "04/03": "04/03",
+        "04/04": "04/04",
+        "04/06": "04/06"
     }
 
     @classmethod
