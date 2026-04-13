@@ -126,9 +126,11 @@ class FileHandler (QObject):
         Add a single image to storage (updates if exists).
         """
 
+        print(f"Saving image {image.image_id} with dict: {image.to_dict()}")
+
         pictures_file = Path(self.pictures_path)
 
-        self.pictures[image.image_id] = image.to_dict()  # Add or overwrite
+        self.pictures[str(image.image_id)] = image.to_dict()  # Add or overwrite
 
         with open(pictures_file, 'w') as file:
             json.dump(self.pictures, file)
@@ -139,7 +141,7 @@ class FileHandler (QObject):
         """
         pictures_file = Path(self.pictures_path)
 
-        self.pictures.pop(image_id, None)
+        self.pictures.pop(str(image_id), None)
 
         with open(pictures_file, 'w') as file:
             json.dump(self.pictures, file)
@@ -149,8 +151,8 @@ class FileHandler (QObject):
 
         print(self.pictures)
         for id in image_ids:
-            if id in self.pictures:
-                pictures_set.append(self.pictures[id])
+            if str(id) in self.pictures:
+                pictures_set.append(self.pictures[str(id)])
 
         return pictures_set
     

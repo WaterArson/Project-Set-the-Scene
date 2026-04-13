@@ -123,7 +123,7 @@ Popup {
                     // call backend batch API
                     tagHandler.attach_tags_batch(
                         imagesToTag,
-                        selectedTags
+                        JSON.stringify(selectedTags)
                     )
 
                     popupRoot.close() // close popup after submission

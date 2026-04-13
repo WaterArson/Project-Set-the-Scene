@@ -28,6 +28,8 @@ class TagHandler (QObject):
 
         self.tag_classes = tag_class_list
 
+        self._fill_tag_dicts()
+
         #create date tags from the dates in the tag json
         DateTag = tag_class_list.get("DateTag")
         if DateTag:
@@ -38,6 +40,20 @@ class TagHandler (QObject):
         self._sleep_event = threading.Event()
         self.settings_handler.frequencyChanged.connect(self._on_frequency_changed)
         self.start_tag_watchers()
+
+    """
+    This function is for filling each tags internal dictionaries based on the tags internal groups list.
+    Each tag handles this differently, see each tags fill_groups_for_selection function for details
+    on implementation.
+
+    params: None
+    returns: None
+    """
+    def _fill_tag_dicts(self):
+        for tag_class in self.tag_classes.values():
+            fill_function = getattr(tag_class, "fill_groups_for_selection", None)
+            if callable(fill_function):
+                fill_function()
 
     def _on_frequency_changed(self):
         print(f"_on_frequency_changed called, new frequency: {self.settings_handler.getFrequency}")
@@ -80,7 +96,7 @@ class TagHandler (QObject):
         self.file_handler.save_tag_json(self.tag_dictionary)
 
     # NEW: Batch tagging for multiple images and multiple tags
-    @Slot('QVariantList', 'QVariantList')
+    @Slot('QVariantList', str)
     def attach_tags_batch(self, file_locations, tag_pairs):
         """
         Attach multiple tags to multiple images in one operation.
@@ -128,6 +144,7 @@ class TagHandler (QObject):
                 image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
 
             # NEW: persist updated image once per image
+            print(f"Image {image_obj.image_id} tags before save: {image_obj.tags}")
             self.file_handler.add_image(image_obj)
 
         # NEW: persist tag dictionary once after batch
