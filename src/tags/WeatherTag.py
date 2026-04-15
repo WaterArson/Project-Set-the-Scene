@@ -13,6 +13,10 @@ class WeatherTag:
     }
 
     @classmethod
+    def __init__(self):
+        self._cached_weather = None
+
+    @classmethod
     def _get_weather(cls) -> dict:
         city = Utils.get_location() # get the users city based on their location
         params = {
@@ -29,6 +33,7 @@ class WeatherTag:
         data = cls._get_weather()
         condition_id = data["weather"][0]["id"] # get the weather condition id from the API response
 
-        for tag_name, id_range in cls.tags.items():
-            if condition_id in id_range:
+        for tag_name, ids in cls.tags.items():
+            print(f"Checking WeatherTag: {tag_name} with ids {ids} against condition id {condition_id}", flush=True)
+            if condition_id in ids:
                 return ("WeatherTag", tag_name)

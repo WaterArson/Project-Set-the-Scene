@@ -42,7 +42,19 @@ class TagHandler (QObject):
 
     def get_tag_names(self):
         return self.tag_classes.keys()
-                    
+    
+    def get_internal_tags(self):
+        #for parent, tag_class in self.tag_classes.items():
+        #    for subtag in getattr(tag_class, "tags", {}).keys():
+        #        key = f"{parent}:{subtag}"
+        #        self.priority.setdefault(key, self.defaultPriority)
+        tags = []
+
+        for parent, tag_class in self.tag_classes.items():
+            for subtag in getattr(tag_class, "tags", {}).keys():
+                tags.append((parent, subtag))
+
+        return tags
 
     def _normalize_tag_data(self):
         for parent_tag, subtags in self.tag_dictionary.items():

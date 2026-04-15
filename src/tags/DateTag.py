@@ -11,17 +11,19 @@ class DateTag:
         "Valentine's Day": "02/14",
         "03/25": "03/25"
     }
-
+    
     @classmethod
-    def check(self, subtag: str, priority: int) -> tuple[str, str] | None:
+    def check(cls, subtag: str, priority: int) -> tuple[str, str] | None:
         today = datetime.now()
         month, day = today.month, today.day
 
-        if self._condition_met(subtag, priority):
-            return ("WeatherTag", subtag)
+        # check dates
+        for tag_name, date in cls.tags.items():
+            if date == f"{month:02d}/{day:02d}":
+                return ("DateTag", tag_name)
         
         return None
-
+    
     @staticmethod
     def add_dates(new_dates: dict):
         for date in new_dates:
