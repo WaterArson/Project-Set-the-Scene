@@ -9,7 +9,7 @@ class WeatherTag:
     tags = {
         "Rain": range(500, 532),
         "Thunderstorm": range(200, 233),
-        "Snow": range(600, 623)
+        "Snow": range(600, 805) #623
     }
 
     @classmethod
@@ -35,5 +35,6 @@ class WeatherTag:
 
         for tag_name, ids in cls.tags.items():
             print(f"Checking WeatherTag: {tag_name} with ids {ids} against condition id {condition_id}", flush=True)
+            print(f"is in: {condition_id in ids}")
             if condition_id in ids:
                 return ("WeatherTag", tag_name)

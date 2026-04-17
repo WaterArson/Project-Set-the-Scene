@@ -217,24 +217,43 @@ class TagHandler (QObject):
                 else:
                     self.active_tags.discard(active_tag)
 
-    def getActiveImageIDs(self) -> set: #TODO: gut this, return active tags
-        active_image_ids = set()
+    def getActiveImageIDs(self) -> dict: #TODO: gut this, return active tags
+        #active_image_ids = set()
+
+        image_priority_map = {}
 
         # using lock to avoid "race conditions"
         # we love _lock!
         with self._lock:
             active_tags_snapshot = set(self.active_tags)
+            print(f"active tag snapshot: {active_tags_snapshot}")
 
-        if len(active_tags_snapshot) > 0:
-            for parent_tag, subtag in active_tags_snapshot:
-                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
-        if len(self.active_tags) > 0:
-            for parent_tag, subtag in self.active_tags:
-                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, []).get("images", [])
-                active_image_ids.update(ids)
+        #if len(active_tags_snapshot) > 0:
+        #    for parent_tag, subtag in active_tags_snapshot:
+        #        ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+        #if len(self.active_tags) > 0:
+        #    for parent_tag, subtag in self.active_tags:
+        #        ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, []).get("images", [])
+        #        active_image_ids.update(ids)
 
-        print(f"Active image IDs: {active_image_ids}", flush=True)
-        return active_image_ids
+        #print(f"Active image IDs: {active_image_ids}", flush=True)
+        #return active_image_ids
+        for parent_tag, subtag in active_tags_snapshot:
+                print(f"tag dict: {self.tag_dictionary}")
+                tag_data = self.tag_dictionary.get(parent_tag, {}).get(subtag, {})
+                print(f"tag data: {tag_data}")
+                ids = tag_data.get("images", [])
+                priority = tag_data.get("priority", self.default_priority)
+
+                for img_id in ids:
+                    # Keep the BEST (lowest) priority
+                    if img_id not in image_priority_map:
+                        image_priority_map[img_id] = priority
+                    else:
+                        image_priority_map[img_id] = min(image_priority_map[img_id], priority)
+
+        print(f"image priority map: {image_priority_map}", flush=True)
+        return image_priority_map
 
     def _prepare_dropdown_items(self):
         items = []
