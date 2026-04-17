@@ -18,6 +18,7 @@ class TagHandler (QObject):
         tag_class_list = file_handler.get_tag_class_list()
 
         self.active_tags = set() # set of tags that have met their threshold and should have their images displayed
+        self._lock = threading.Lock()  #protect shared state across the threads
 
         for tag in tag_class_list.keys():
             if tag not in tag_json:
@@ -37,8 +38,13 @@ class TagHandler (QObject):
 
         self._prepare_dropdown_items()
 
-        self._watchers = {}
+        self._sleep_event = threading.Event()
+        self.settings_handler.frequencyChanged.connect(self._on_frequency_changed)
         self.start_tag_watchers()
+
+    def _on_frequency_changed(self):
+        print(f"_on_frequency_changed called, new frequency: {self.settings_handler.getFrequency}")
+        self._sleep_event.set()
 
     def get_tag_names(self):
         return self.tag_classes.keys()
@@ -116,47 +122,117 @@ class TagHandler (QObject):
 
         return self.tag_dictionary.get(parent_tag, {}).get(tag, {}).get("priority", 0)
 
-    def start_tag_watchers(self):
-        interval = self.settings_handler.getFrequency  # get the interval from settings handler
+        # now storing tag inside ImageObject as well as list
+        image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
+        # maintain the updated image
+        self.file_handler.add_image(image_obj)
 
-        for tag_name, tag_class in self.tag_classes.items():
+        # used so tags don't disappear on reboot
+        self.file_handler.save_tag_json(self.tag_dictionary)
 
-            if tag_name not in self.tag_dictionary:
+    # NEW: Batch tagging for multiple images and multiple tags
+    @Slot('QVariantList', 'QVariantList')
+    def attach_tags_batch(self, file_locations, tag_pairs):
+        """
+        Attach multiple tags to multiple images in one operation.
+
+        file_locations: list[str]
+        tag_pairs: list[{"parent": str, "subtag": str}]
+        """
+
+        images = self.file_handler.get_images()
+
+        # NEW: build fast lookup map (path -> ImageObject) to avoid repeated linear scans
+        path_map = {}
+        for img in images.values():
+            resolved = Path(img.path).resolve()
+            path_map[resolved] = img
+
+        for file_location in file_locations:
+            clean_location = (
+                QUrl(file_location).toLocalFile()
+                if file_location.startswith("file://")
+                else file_location
+            )
+            clean_location = Path(clean_location).resolve()
+
+            image_obj = path_map.get(clean_location)
+
+            if image_obj is None:
+                print(f"No image found for path: {file_location}")
                 continue
 
-            thread = threading.Thread(
-                target=self._watch_tag,
-                args=(tag_class, tag_name, interval),
-                daemon=True # turns off when the application is closed
-            )
-            self._watchers[tag_name] = thread
-            thread.start()
+            for pair in tag_pairs:
+                parent_tag = pair["parent"] + "Tag"
+                tag = pair["subtag"]
+
+                if parent_tag not in self.tag_dictionary:
+                    continue
+
+                if tag not in self.tag_dictionary[parent_tag]:
+                    self.tag_dictionary[parent_tag][tag] = []
+
+                if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
+                    self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
+
+                # NEW: also update ImageObject tags
+                image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
+
+            # NEW: persist updated image once per image
+            self.file_handler.add_image(image_obj)
+
+        # NEW: persist tag dictionary once after batch
+        self.file_handler.save_tag_json(self.tag_dictionary)
 
 
-    def _watch_tag(self, tag_class, tag_name: str, interval: int):
-        tag_instance = tag_class()
-        stop_event = threading.Event()
+    def start_tag_watchers(self):
+        thread = threading.Thread(target=self._watch_tags, daemon=True)
+        self._watcher_thread = thread
+        thread.start()
 
-        while not stop_event.wait(interval):
-            for subtag, data in self.tag_dictionary.get(tag_name, {}).items():
-                priority = data.get("priority", 0)
 
-                # each tag class will have a check function that checks if internal conditions have been met
-                if tag_instance.check(subtag, priority): 
-                    self.active_tags.add((tag_name, subtag))
+    def start_tag_watchers(self):
+        thread = threading.Thread(target=self._watch_tags, daemon=True)
+        self._watcher_thread = thread
+        thread.start()
 
-                    
-        #    ids = self.tag_dictionary.get(tag_name, [])
-        #    active_tag = tag_instance.check()  # each tag class will have a check function that checks if internal conditions have been met
-        #    if active_tag:
-        #        self.active_tags.add(active_tag)
 
-    def getActiveImageIDs(self) -> set:
+    def _watch_tags(self):
+        tag_instances = {
+            tag_name: tag_class()
+            for tag_name, tag_class in self.tag_classes.items()
+            if tag_name in self.tag_dictionary
+        }
+
+        while True:
+            self._sleep_event.clear()
+            print(f"sleeping for {self.settings_handler.getFrequency} seconds")
+            self._sleep_event.wait(timeout=self.settings_handler.getFrequency)
+            print(f"woke up")
+
+            for tag_name, tag_instance in tag_instances.items():
+                active_tag = tag_instance.check()
+                if active_tag:
+                    self.active_tags.add(active_tag)
+                else:
+                    self.active_tags.discard(active_tag)
+
+    def getActiveImageIDs(self) -> set: #TODO: gut this, return active tags
         active_image_ids = set()
+
+        # using lock to avoid "race conditions"
+        # we love _lock!
+        with self._lock:
+            active_tags_snapshot = set(self.active_tags)
+
+        if len(active_tags_snapshot) > 0:
+            for parent_tag, subtag in active_tags_snapshot:
+                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
         if len(self.active_tags) > 0:
             for parent_tag, subtag in self.active_tags:
                 ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, []).get("images", [])
                 active_image_ids.update(ids)
+
         print(f"Active image IDs: {active_image_ids}", flush=True)
         return active_image_ids
 
@@ -168,9 +244,33 @@ class TagHandler (QObject):
 
             subtags = getattr(tag_class, "tags", {})
             for subtag in subtags.keys():
-                items.append({'header': False, 'parent': parent_name, 'subtag': subtag})
+                # NEW: add selected flag for multi-select UI
+                items.append({'header': False, 'parent': parent_name, 'subtag': subtag, 'selected': False})
         self._dropdown_items = items
 
     @Property('QVariantList')
     def dropdownItems(self):
         return self._dropdown_items
+    
+    @Slot(str, 'QVariantList', result=bool)
+    def imageHasTags(self, file_url, selected_tags) -> bool:
+        clean_location = QUrl(file_url).toLocalFile() if file_url.startswith("file://") else file_url
+        clean_location = Path(clean_location).resolve()
+
+        image_obj = None
+        for img in self.file_handler.get_images().values():
+            if Path(img.path).resolve() == clean_location:
+                image_obj = img
+                break
+
+        if image_obj is None:
+            return False
+
+        for tag in selected_tags:
+            parent_tag = tag["parent"] + "Tag"
+            subtag = tag["subtag"]
+            ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+            if image_obj.image_id not in ids:
+                return False
+
+        return True

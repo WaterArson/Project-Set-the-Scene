@@ -20,7 +20,10 @@ class SettingsHandler(QObject):
 
     @Slot(int)
     def setFrequency(self, seconds):
-        self.interval = seconds
+        if self.interval != seconds:
+            self.interval = seconds
+            self.frequencyChanged.emit()
+            print(f"frequencyChanged emitted")
 
     @Property(int)
     def getFrequency(self):

@@ -16,28 +16,35 @@ class WallpaperHandler:
         self.file_handler = file_handler
         self.settings_handler = settings_handler
 
+        self._sleep_event = threading.Event()
+        self.settings_handler.frequencyChanged.connect(self._on_frequency_changed)
+
         self._start_wallpaper_loop()
+
+    def _on_frequency_changed(self):
+        self._sleep_event.set()
     
     def _start_wallpaper_loop(self):
-        interval = self.settings_handler.getFrequency  # get the interval from settings handler
         thread = threading.Thread(
             target=self._wallpaper_loop,
-            args=(interval,),
             daemon=True
         )
         thread.start()
 
-    def _wallpaper_loop(self, interval: int):
-        stop_event = threading.Event()
-        while not stop_event.wait(interval):
+    def _wallpaper_loop(self):
+        while True:
+            self._sleep_event.clear()
+            self._sleep_event.wait(timeout=self.settings_handler.getFrequency)
             active_images = self._get_active_images()
             self.update_wallpaper(active_images)
 
-    def update_wallpaper(self, active_images: list):
+    def update_wallpaper(self, active_images: list): #TODO: make every id in active images have the priority stored next to it
         print(f"Active images: {active_images}", flush=True)
         if len(active_images) < 1:
             return
-        image = random.choice(active_images)
+        #TODO: grab min of active images dictionary
+        #TODO: all prev. TODO may be faulty with tag structure
+        image = random.choice(active_images) #TODO: grab only min from active images dictionary (as seen in above TODO)
         image_path = str(image["path"])
         system = platform.system()
 
@@ -64,8 +71,10 @@ class WallpaperHandler:
             print(f"Failed to set wallpaper: {e}", flush=True)
 
     def _get_active_images(self) -> list:
-        active_image_ids = self.tag_handler.getActiveImageIDs()
-        active_image_objs = self.file_handler.getActiveImagesFromIDs(active_image_ids)
+        active_image_ids = self.tag_handler.getActiveImageIDs() #TODO: Loop through each tag and its images, call getActiveImages from ids
+        active_image_objs = self.file_handler.getActiveImagesFromIDs(active_image_ids) #TODO: change how function handles and dif. ID's from priorities
+        #TODO: sort image obj. by priority in dictionary to more easily grab highest priority (presort)
 
-        return active_image_objs
+
+        return active_image_objs #TODO:return dictionary
 

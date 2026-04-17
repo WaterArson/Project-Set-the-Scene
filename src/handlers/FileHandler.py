@@ -176,7 +176,7 @@ class FileHandler (QObject):
     
     @Property(str, constant=True)
     def folderPath(self):
-        path = "file:///" + self.folder.replace("\\", "/")
+        path = Path(self.folder).as_uri()
         print(f"folderPath: {path}")
         return path
 
