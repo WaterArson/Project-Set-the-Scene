@@ -16,6 +16,11 @@ Popup {
     property string folderPath: ""
     property string fileName: ""
     property var selectedImagePaths: []   // list of multiple selected images
+    property var checkedStates: ({})
+
+    onOpened: {
+        popupRoot.checkedStates = {}
+    }
 
     // background of the popup
     background: Rectangle {
@@ -72,7 +77,11 @@ Popup {
                         checked: modelData["selected"] || false
 
                         // track selection state
-                        onCheckedChanged: modelData["selected"] = checked
+                        onCheckedChanged: {
+                            let updated = Object.assign({}, popupRoot.checkedStates)
+                            updated[index] = checked
+                            popupRoot.checkedStates = updated
+                        }
 
                         palette.text: "white"               // readable on dark background
                     }
@@ -105,7 +114,7 @@ Popup {
                     let selectedTags = []
                     for (let i = 0; i < tagList.model.length; i++) {
                         let item = tagList.model[i]
-                        if (!item.header && item.selected) {
+                        if (!item.header && popupRoot.checkedStates[i]) {
                             selectedTags.push({
                                 parent: item.parent,
                                 subtag: item.subtag
@@ -121,10 +130,7 @@ Popup {
                     console.log("Batch tags:", selectedTags, "on images:", imagesToTag)
 
                     // call backend batch API
-                    tagHandler.attach_tags_batch(
-                        imagesToTag,
-                        JSON.stringify(selectedTags)
-                    )
+                    tagHandler.attach_tags_batch(imagesToTag, selectedTags)
 
                     popupRoot.close() // close popup after submission
                 }

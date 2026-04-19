@@ -96,7 +96,7 @@ class TagHandler (QObject):
         self.file_handler.save_tag_json(self.tag_dictionary)
 
     # NEW: Batch tagging for multiple images and multiple tags
-    @Slot('QVariantList', str)
+    @Slot('QVariantList', 'QVariantList')
     def attach_tags_batch(self, file_locations, tag_pairs):
         """
         Attach multiple tags to multiple images in one operation.
