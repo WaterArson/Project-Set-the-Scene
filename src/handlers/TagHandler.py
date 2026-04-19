@@ -238,7 +238,7 @@ class TagHandler (QObject):
     on implementation.
 
     params: tag_name: str - the name of the tag to get groups for, subtag: str - the subtag to get groups for
-    returns: list of group names for the given tag
+    returns: list - group names for the given tag
     """
     @Slot(str, str, result='QVariantList')
     def getTagGroups(self, tag_name: str, subtag: str) -> list:
@@ -258,7 +258,8 @@ class TagHandler (QObject):
     """
     This function is for enabling or disabling groups within a specific tag.
 
-    params: tag_name: str - the name of the tag to get groups for, subtag: str - the subtag to get groups for,  enabled_groups: list of group names to enable for the given tag and subtag, groups not in enabled_groups will be disabled
+    params: tag_name: str - the name of the tag to get groups for, subtag: str - the subtag to get groups for,
+        enabled_groups: list of group names to enable for the given tag and subtag, groups not in enabled_groups will be disabled
     returns: None
     """
     @Slot(str, str, 'QVariantList')
