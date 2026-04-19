@@ -14,7 +14,7 @@ class DateTag:
         "04/04": "04/04",
         "04/06": "04/06"
     }
-
+    
     @classmethod
     def check(cls) -> tuple[str, str] | None:
         today = datetime.now()
@@ -24,7 +24,9 @@ class DateTag:
         for tag_name, date in cls.tags.items():
             if date == f"{month:02d}/{day:02d}":
                 return ("DateTag", tag_name)
-
+        
+        return None
+    
     @staticmethod
     def add_dates(new_dates: dict):
         for date in new_dates:

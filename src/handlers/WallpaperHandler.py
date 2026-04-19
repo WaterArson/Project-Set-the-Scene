@@ -38,12 +38,27 @@ class WallpaperHandler:
             active_images = self._get_active_images()
             self.update_wallpaper(active_images)
 
-    def update_wallpaper(self, active_images: list):
+    def update_wallpaper(self, active_images: list): #TODO: make every id in active images have the priority stored next to it
         print(f"Active images: {active_images}", flush=True)
-        if len(active_images) < 1:
+
+        if not active_images:
             return
-        image = random.choice(active_images)
+
+        # Find best (lowest) priority
+        min_priority = min(img["priority"] for img in active_images.values())
+
+        # Filter only best-priority images
+        best_images = [
+            img["data"]
+            for img in active_images.values()
+            if img["priority"] == min_priority
+        ]
+
+        # Random choice among best
+        image = random.choice(best_images)
         image_path = str(image["path"])
+
+
         system = platform.system()
 
         try:
@@ -69,8 +84,21 @@ class WallpaperHandler:
             print(f"Failed to set wallpaper: {e}", flush=True)
 
     def _get_active_images(self) -> list:
-        active_image_ids = self.tag_handler.getActiveImageIDs()
-        active_image_objs = self.file_handler.getActiveImagesFromIDs(active_image_ids)
+        #active_image_ids = self.tag_handler.getActiveImageIDs() #TODO: Loop through each tag and its images, call getActiveImages from ids
+        #active_image_objs = self.file_handler.getActiveImagesFromIDs(active_image_ids) #TODO: change how function handles and dif. ID's from priorities
+        #TODO: sort image obj. by priority in dictionary to more easily grab highest priority (presort)
+        image_priority_map = self.tag_handler.getActiveImageIDs()
 
-        return active_image_objs
+        active_images = {}
+
+        for img_id, priority in image_priority_map.items():
+            if img_id in self.file_handler.pictures:
+                active_images[img_id] = {
+                    "data": self.file_handler.pictures[img_id],
+                    "priority": priority
+                }
+
+        return active_images
+
+        #return active_image_objs #TODO:return dictionary
 

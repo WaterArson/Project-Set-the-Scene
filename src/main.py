@@ -9,4 +9,5 @@ if __name__ == "__main__":
     fileHandler = FileHandler(settingsHandler)
     tagHandler = TagHandler(fileHandler, settingsHandler)
     wallpaperHandler = WallpaperHandler(tagHandler, fileHandler, settingsHandler)
+    settingsHandler.initPriority(tagHandler)
     gui.start_display(fileHandler, tagHandler, wallpaperHandler, settingsHandler)

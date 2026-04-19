@@ -52,15 +52,35 @@ class FileHandler (QObject):
 
         # Load from JSON if it exists
         if json_file.exists():
-            with open(json_file, 'r') as file:
-                return json.load(file)
+            try:
+                with open(json_file, 'r') as file:
+                    return json.load(file)
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON in {self.json_path}: {e}")
+                return {}  # fallback instead of crash
 
         return {}
 
     def save_tag_json(self, tag_json: dict):
+        
         json_file = Path(self.json_path)
-        with open(json_file, 'w') as file:
-            json.dump(tag_json, file)
+        temp_path = json_file.with_suffix(".tmp")
+
+        # Ensure directory exists
+        json_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with open(temp_path, 'w') as file:
+                json.dump(tag_json, file, indent=4)
+
+            # Replace only if temp file exists
+            if temp_path.exists():
+                os.replace(temp_path, json_file)
+            else:
+                print("Temp file was not created!")
+
+        except Exception as e:
+            print(f"Error saving tag JSON: {e}")
 
 
     def get_tag_class_list(self):

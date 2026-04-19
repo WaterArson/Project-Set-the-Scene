@@ -25,6 +25,7 @@ class TagHandler (QObject):
                 tag_json[tag] = {}
 
         self.tag_dictionary = tag_json
+        self._normalize_tag_data()
 
         self.tag_classes = tag_class_list
 
@@ -34,6 +35,8 @@ class TagHandler (QObject):
         DateTag = tag_class_list.get("DateTag")
         if DateTag:
             DateTag.add_dates(tag_json.get("DateTag", {}))
+
+        self.default_priority = self.settings_handler.defaultPriority
 
         self._prepare_dropdown_items()
 
@@ -59,6 +62,38 @@ class TagHandler (QObject):
         print(f"_on_frequency_changed called, new frequency: {self.settings_handler.getFrequency}")
         self._sleep_event.set()
 
+    def get_tag_names(self):
+        return self.tag_classes.keys()
+    
+    def get_internal_tags(self):
+        #for parent, tag_class in self.tag_classes.items():
+        #    for subtag in getattr(tag_class, "tags", {}).keys():
+        #        key = f"{parent}:{subtag}"
+        #        self.priority.setdefault(key, self.defaultPriority)
+        tags = []
+
+        for parent, tag_class in self.tag_classes.items():
+            for subtag in getattr(tag_class, "tags", {}).keys():
+                tags.append((parent, subtag))
+
+        return tags
+
+    def _normalize_tag_data(self):
+        for parent_tag, subtags in self.tag_dictionary.items():
+            for tag, data in list(subtags.items()):
+                if isinstance(data, list):
+                    self.tag_dictionary[parent_tag][tag] = {
+                        "images": data,
+                        "priority": self.default_priority
+                    }
+                else:
+                    #Ensure keys exist
+                    data.setdefault("images", [])
+                    if "priority" not in data:  
+                        data["priority"] = self.default_priority
+                    else:
+                        data["priority"] = int(data["priority"])
+
     @Slot(str, str, str)
     def attach_tag(self, file_location, parent_tag, tag):
         parent_tag = parent_tag + 'Tag' # add Tag suffix to match class names
@@ -82,10 +117,26 @@ class TagHandler (QObject):
             return
 
         if tag not in self.tag_dictionary[parent_tag]:
-            self.tag_dictionary[parent_tag][tag] = []
+            self.tag_dictionary[parent_tag][tag] = {
+                "images": [],
+                "priority": int(self.settings_handler.defaultPriority)
+            }
 
-        if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]:
-            self.tag_dictionary[parent_tag][tag].append(image_obj.image_id)
+        if image_obj.image_id not in self.tag_dictionary[parent_tag][tag]["images"]:
+            self.tag_dictionary[parent_tag][tag]["images"].append(image_obj.image_id)
+
+    #sets the priority of a tag
+    def set_tag_priority(self, parent_tag, tag, priority):
+        parent_tag = parent_tag + "Tag"
+
+        if parent_tag in self.tag_dictionary and tag in self.tag_dictionary[parent_tag]:
+            self.tag_dictionary[parent_tag][tag]["priority"] = priority
+
+    #gets the priority of a tag
+    def get_tag_priority(self, parent_tag, tag):
+        parent_tag = parent_tag + "Tag"
+
+        return self.tag_dictionary.get(parent_tag, {}).get(tag, {}).get("priority", 0)
 
         # now storing tag inside ImageObject as well as list
         image_obj.add_tag(f"{parent_tag}:{tag}", 1.0)
@@ -157,6 +208,12 @@ class TagHandler (QObject):
         thread.start()
 
 
+    def start_tag_watchers(self):
+        thread = threading.Thread(target=self._watch_tags, daemon=True)
+        self._watcher_thread = thread
+        thread.start()
+
+
     def _watch_tags(self):
         tag_instances = {
             tag_name: tag_class()
@@ -177,21 +234,43 @@ class TagHandler (QObject):
                 else:
                     self.active_tags.discard(active_tag)
 
-    def getActiveImageIDs(self) -> set:
-        active_image_ids = set()
+    def getActiveImageIDs(self) -> dict: #TODO: gut this, return active tags
+        #active_image_ids = set()
+
+        image_priority_map = {}
 
         # using lock to avoid "race conditions"
         # we love _lock!
         with self._lock:
             active_tags_snapshot = set(self.active_tags)
+            print(f"active tag snapshot: {active_tags_snapshot}")
 
-        if len(active_tags_snapshot) > 0:
-            for parent_tag, subtag in active_tags_snapshot:
-                ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
-                active_image_ids.update(ids)
+        #if len(active_tags_snapshot) > 0:
+        #    for parent_tag, subtag in active_tags_snapshot:
+        #        ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, [])
+        #if len(self.active_tags) > 0:
+        #    for parent_tag, subtag in self.active_tags:
+        #        ids = self.tag_dictionary.get(parent_tag, {}).get(subtag, []).get("images", [])
+        #        active_image_ids.update(ids)
 
-        print(f"Active image IDs: {active_image_ids}", flush=True)
-        return active_image_ids
+        #print(f"Active image IDs: {active_image_ids}", flush=True)
+        #return active_image_ids
+        for parent_tag, subtag in active_tags_snapshot:
+                print(f"tag dict: {self.tag_dictionary}")
+                tag_data = self.tag_dictionary.get(parent_tag, {}).get(subtag, {})
+                print(f"tag data: {tag_data}")
+                ids = tag_data.get("images", [])
+                priority = tag_data.get("priority", self.default_priority)
+
+                for img_id in ids:
+                    # Keep the BEST (lowest) priority
+                    if img_id not in image_priority_map:
+                        image_priority_map[img_id] = priority
+                    else:
+                        image_priority_map[img_id] = min(image_priority_map[img_id], priority)
+
+        print(f"image priority map: {image_priority_map}", flush=True)
+        return image_priority_map
 
     def _prepare_dropdown_items(self):
         items = []

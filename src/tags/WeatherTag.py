@@ -42,6 +42,10 @@ class WeatherTag:
 
 
     @classmethod
+    def __init__(self):
+        self._cached_weather = None
+
+    @classmethod
     def _get_weather(cls) -> dict:
         city = Utils.get_location() # get the users city based on their location
         params = {

@@ -26,7 +26,9 @@ Page {
             ColumnLayout {
                 id: settingsGrid
                 width: parent.width
-                spacing: 20
+                columns: 1
+                columnSpacing: 20
+                rowSpacing: 20
 
                 Rectangle {
                     Layout.fillWidth: true
@@ -75,6 +77,99 @@ Page {
                     }
                 }
 
+                //Change Priority Setting
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 80
+                    radius: 8
+                    color: "#1e2a3a"
+                    ColumnLayout {
+                        anchors.fill: parent
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            ColumnLayout {
+                                Text { text: "Priority"; font.bold: true }
+                                Text { text: "Changes the order in which tags are applied" }
+                            }
+
+                            ColumnLayout {
+                                spacing: 4
+                                RowLayout {
+                                    spacing: 8
+
+                                    //dropdown of tags
+                                    ComboBox {
+                                        id: priorityTags
+                                        model: tagHandler.dropdownItems
+                                        textRole: "subtag"
+
+                                        displayText: currentIndex >= 0 ? currentText : "Select a tag..."
+
+                                        delegate: ItemDelegate {
+                                            width: parent.width
+
+                                            // allows for header groups in dropdown
+                                            visible: true
+                                            enabled: !modelData["header"]
+
+                                            contentItem: Text {
+                                                text: modelData["header"] ? modelData["parent"] : "    " + modelData["subtag"]
+                                                font.bold: modelData["header"]
+                                                color: modelData["header"] ? "gray" : "black"
+                                            }
+                                        }
+
+                                        onCurrentIndexChanged: {
+                                            let item = tagHandler.dropdownItems[currentIndex]
+
+                                            if (item && !item.header) {
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
+                                        }
+                                    }
+
+                                    //Text to input priority TODO: finish priority python code before this
+                                    SpinBox {
+                                        id: priorityField
+                                        from: 1
+                                        to: 10
+                                        stepSize: 1
+                                        value: 5
+                                        editable: true
+                                    }
+
+                                    Button {
+                                        text: "Submit"
+                                        onClicked: {
+                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                            if (item && !item.header) {
+                                                settingsHandler.setPriority(priorityField.value, item.subtag)
+                                                fileHandler.save_settings()
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        text: "Default"
+                                        onClicked: {
+                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                            if (item && !item.header) {
+                                                settingsHandler.setPriority(settingsHandler.defaultPriority, item.subtag)
+                                                fileHandler.save_settings()
+                                                priorityField.value = settingsHandler.getPriority(item.subtag)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Change Sensitivity Setting
                 Rectangle {
                     Layout.fillWidth: true
                     radius: 8
