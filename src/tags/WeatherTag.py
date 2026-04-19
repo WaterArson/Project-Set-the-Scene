@@ -22,7 +22,7 @@ class WeatherTag:
     groups = {
         "Rain": {
             "Drizzle": [[300, 301, 302, 310, 311, 312, 313, 314, 321], True],
-            "Light Rain": [[500, 520, 804], True],
+            "Light Rain": [[500, 520], True],
             "Medium Rain": [[501, 521], True],
             "Heavy Rain": [[502, 503, 504, 522, 531], True],
         },
@@ -56,6 +56,7 @@ class WeatherTag:
     @classmethod
     def fill_groups_for_selection(cls):
         for group in cls.groups:
+            cls.tags[group] = set() # reset the tags for this group before filling
             for condition, [ids, enabled] in cls.groups[group].items():
                 if enabled:
                     cls.tags[group].update(ids)

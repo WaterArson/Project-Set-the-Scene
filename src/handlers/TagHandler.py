@@ -231,3 +231,47 @@ class TagHandler (QObject):
                 return False
 
         return True
+    
+    """
+    This function is for getting each tags internal groups based on the tags internal groups list.
+    Each tag handles this differently, see each tags fill_groups_for_selection function for details
+    on implementation.
+
+    params: tag_name: str - the name of the tag to get groups for, subtag: str - the subtag to get groups for
+    returns: list of group names for the given tag
+    """
+    @Slot(str, str, result='QVariantList')
+    def getTagGroups(self, tag_name: str, subtag: str) -> list:
+        tag_class = self.tag_classes.get(tag_name + "Tag")
+        print(f"getTagGroups called for tag: {subtag}, found class: {tag_class}", flush=True)
+        if tag_class is None:
+            return []
+        groups = getattr(tag_class, "groups", None)
+        print(f"Found groups for tag {subtag}: {groups}", flush=True)
+        if not groups:
+            return []
+        group_dict = groups.get(subtag, {})
+        print("List of groups to return:", list(group_dict.keys()), flush=True)
+        return list(group_dict.keys())
+
+
+    """
+    This function is for enabling or disabling groups within a specific tag.
+
+    params: tag_name: str - the name of the tag to get groups for, subtag: str - the subtag to get groups for,  enabled_groups: list of group names to enable for the given tag and subtag, groups not in enabled_groups will be disabled
+    returns: None
+    """
+    @Slot(str, str, 'QVariantList')
+    def setTagGroupsEnabled(self, tag_name: str, subtag: str, enabled_groups: list):
+        tag_class = self.tag_classes.get(tag_name + "Tag")
+        if tag_class is None:
+            return
+        groups = getattr(tag_class, "groups", None)
+        if not groups:
+            return
+        group_dict = groups.get(subtag, {})
+
+        for group_name in group_dict:
+            group_dict[group_name][1] = group_name in enabled_groups
+
+        tag_class.fill_groups_for_selection()

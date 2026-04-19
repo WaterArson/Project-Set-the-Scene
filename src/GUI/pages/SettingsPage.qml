@@ -103,6 +103,20 @@ Page {
                                 model: tagHandler.dropdownItems
                                 textRole: "subtag"
                                 displayText: currentIndex >= 0 ? currentText : "Select a tag..."
+                                
+                                onCurrentIndexChanged: {
+                                    if (currentIndex < 0) {
+                                        groups.currentGroups = []
+                                        return
+                                    }
+                                    let item = tagHandler.dropdownItems[currentIndex]
+                                    if (!item || item["header"]) {
+                                        groups.currentGroups = []
+                                        return
+                                    }
+                                    groups.currentGroups = tagHandler.getTagGroups(item["parent"], item["subtag"])
+                                }
+                                
                                 delegate: ItemDelegate {
                                     width: parent.width
                                     enabled: !modelData["header"]
@@ -117,6 +131,7 @@ Page {
 
                         // second box, only visible when a subtag is selected
                         Rectangle {
+                            id: groups
                             Layout.fillWidth: true
                             height: 120
                             color: "#162030"
@@ -125,13 +140,22 @@ Page {
                             visible: sensitivityField.currentIndex >= 0 &&
                                     !tagHandler.dropdownItems[sensitivityField.currentIndex]["header"]
 
+                            property var currentGroups: []
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "No selections available"
+                                color: "gray"
+                                visible: parent.currentGroups.length === 0
+                            }
+
                             ScrollView {
                                 anchors.fill: parent
 
                                 ListView {
                                     id: subtagList
                                     width: parent.width
-                                    model: [] // TODO: define what populates this based on selected tag
+                                    model: parent.parent.currentGroups
 
                                     delegate: Row {
                                         width: parent.width
@@ -140,9 +164,9 @@ Page {
                                             id: subtagCheck
                                             palette.text: "white"
                                             onCheckedChanged: {
-                                                let updated = Object.assign({}, parent.parent.parent.sensitivityChecked)
+                                                let updated = Object.assign({}, sensitivityColumn.parent.sensitivityChecked)
                                                 updated[modelData] = checked
-                                                parent.parent.parent.sensitivityChecked = updated
+                                                sensitivityColumn.parent.sensitivityChecked = updated
                                             }
                                         }
                                         Text {
@@ -164,15 +188,10 @@ Page {
                                 text: "Submit"
                                 onClicked: {
                                     let selected = sensitivityField.model[sensitivityField.currentIndex]
-                                    settingsHandler.setSensitivity(selected["parent"], selected["subtag"])
-                                    fileHandler.save_settings()
-                                }
-                            }
-                            Button {
-                                text: "Default"
-                                onClicked: {
-                                    sensitivityField.currentIndex = -1
-                                    settingsHandler.setSensitivity(null, null)
+                                    let checked = sensitivityColumn.parent.sensitivityChecked
+                                    let enabledGroups = Object.keys(checked).filter(k => checked[k])
+                                    
+                                    tagHandler.setTagGroupsEnabled(selected["parent"], selected["subtag"], enabledGroups)
                                     fileHandler.save_settings()
                                 }
                             }
