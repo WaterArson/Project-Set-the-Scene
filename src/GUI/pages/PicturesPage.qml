@@ -10,61 +10,87 @@ import "../styles"
 Page {
     id: picturesPage
 
-    // container for the page content
-
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        // create top bar
 
         TopBar {
             id: topBar
             Layout.preferredHeight: parent.height * 0.1
         }
 
+        //the banner!!!
+        Rectangle {
+            Layout.fillWidth: true
+            height: 40
+            color: "#1e2a3a"
+
+            Item {
+                anchors.fill: parent
+
+                FileUploadButton {
+                    width: 200
+                    height: 35
+                    anchors.right: parent.horizontalCenter
+                }
+
+                Button {
+                    width: 200
+                    height: 35
+                    anchors.left: parent.horizontalCenter
+
+                    text: imageGallery.selectedTags.length > 0
+                          ? "Filters (" + imageGallery.selectedTags.length + ")"
+                          : "Filter by Tags"
+
+                    background: Rectangle {
+                        color: "#1e2a3a"
+                        radius: 10
+                        border.color: "white"
+                        border.width: 2
+                    }
+                    onClicked: imageGallery.openTagFilter()
+                }
+            }
+        }
+
         RowLayout {
             id: contentRow
             Layout.preferredHeight: parent.height * 0.9
             spacing: 0
-            Rectangle{
+
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 1
-                FileUploadButton {
-                    id: fileUploadButton
-                    Layout.preferredHeight: contentRow.height * 0.5
-                }
             }
 
-            Rectangle{
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 5
-                   ImageGallery {
-                        anchors.centerIn: parent
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                             onImageSelected: {
-                            console.log("Parent received image:", fileUrl)
-                            // Do whatever you want with the clicked image
-                            // e.g., show in a bigger view, upload, etc.
-                        }
+
+                ImageGallery {
+                    id: imageGallery
+                    anchors.fill: parent
+
+                    onImageSelected: {
+                        console.log("Parent received image:", fileUrl)
                     }
+                }
 
                 Loader {
-                id: fileLoader
-                source: "MyView.qml" // Predefined file
-                anchors.fill: parent
-
+                    id: fileLoader
+                    source: "MyView.qml"
+                    anchors.fill: parent
+                }
             }
-        }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.preferredWidth: 1
-        }
-
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredWidth: 1
+            }
         }
     }
 }

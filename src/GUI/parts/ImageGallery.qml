@@ -7,18 +7,21 @@ import "../styles"
 
 ColumnLayout {
     id: galleryRoot
-    property bool galleryVisible: false
     anchors.fill: parent
+
+    property bool galleryVisible: false
     property string selectedImage: ""
-    property var selectedTags: []  // ADD THIS
+    property var selectedTags: []
     signal imageSelected(string fileUrl)
 
     function imageMatchesFilters(fileUrl) {
         if (selectedTags.length === 0) return true
         return tagHandler.imageHasTags(fileUrl, selectedTags)
     }
+    function openTagFilter() {
+        tagFilterPopup.open()
+    }
 
-    // MOVED OUTSIDE COLUMNLAYOUT FLOW
     Popup {
         id: tagFilterPopup
         x: (galleryRoot.width - width) / 2
@@ -44,6 +47,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 model: tagHandler.dropdownItems
+
                 delegate: Item {
                     width: parent.width
                     height: 36
@@ -111,44 +115,17 @@ ColumnLayout {
         showDirs: false
     }
 
-    // FILTER BUTTON
-    Button {
-        text: selectedTags.length > 0 ? "Filters (" + selectedTags.length + ")" : "Filter by Tags"
-        Layout.preferredHeight: 40
-        Layout.alignment: Qt.AlignHCenter
-        background: Rectangle {
-            color: selectedTags.length > 0 ? "#46c7d5" : "#46c7d5"
-            radius: 10
-        }
-        onClicked: tagFilterPopup.open()
-    }
-
-    // VIEW IMAGES BUTTON
-    Button {
-        text: "View Images"
-        Layout.preferredHeight: 40
-        Layout.alignment: Qt.AlignHCenter
-        background: Rectangle {
-            color: "#90EE90"
-            radius: 10
-        }
-        onClicked: {
-            galleryRoot.galleryVisible = !galleryRoot.galleryVisible
-        }
-    }
-
-    // GRID VIEW
     GridView {
         id: imageViewer
-        Layout.preferredHeight: galleryRoot.galleryVisible ? parent.height * 0.6 : 0
         Layout.fillWidth: true
         Layout.fillHeight: true
+
         property int columns: 4
         property int spacing: 10
+
         model: folderModel
         cellWidth: width > 0 ? width / columns : 200
         cellHeight: 220
-        flow: GridView.FlowLeftToRight
 
         delegate: Item {
             width: imageViewer.cellWidth
@@ -178,6 +155,7 @@ ColumnLayout {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
+
                 onClicked: {
                     galleryRoot.selectedImage = folderModel.folder + "/" + fileName
                     galleryRoot.imageSelected(galleryRoot.selectedImage)
@@ -185,6 +163,7 @@ ColumnLayout {
                     imagePopup.fileName = fileName
                     imagePopup.open()
                 }
+
                 onEntered: parent.scale = 1.05
                 onExited: parent.scale = 1.0
             }

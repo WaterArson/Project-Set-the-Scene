@@ -1,52 +1,47 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
-//creation of separate folder called handlers
-//create FileHandler.py
-//put stuff in there, reference here
-
+import QtQuick.Layouts
 
 Item {
     id: r
 
     signal imageSelected(url fileUrl)
 
+    implicitWidth: 200
+    implicitHeight: 40
+
     Button {
+        anchors.fill: parent
         text: "Upload Image"
+
         onClicked: fileDialog.open()
 
         background: Rectangle {
-        color: "#ADD8E6"
-        //rounded corners!
-        radius: 10
-    }
+            color: "#1e2a3a"
+            radius: 10
+            border.color: "white"
+            border.width: 2
+        }
 
-    contentItem: Text {
-        text: parent.text
-        color: "black"
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-    }
-
+        contentItem: Text {
+            text: parent.text
+            color: "white"
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
     }
 
     FileDialog {
         id: fileDialog
         title: "Select an Image"
-        //only allows certain file types in
         nameFilters: ["Image files (*.png *.jpg *.jpeg *.bmp)"]
-
-
-        //allow multiple images to be uploaded (WIP)
         fileMode: FileDialog.OpenFiles
 
-
         onAccepted: {
-            //allow multiple images to be uploaded (WIP)
-          for (var i = 0; i < selectedFiles.length; i++) {
+            for (var i = 0; i < selectedFiles.length; i++) {
                 fileHandler.save_image(selectedFiles[i])
             }
         }
-
     }
 }
