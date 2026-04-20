@@ -9,20 +9,23 @@ Popup {
     modal: true
     focus: true
     visible: false
-    width: parent.width * 0.7      // increased width for larger popup
-    height: parent.height * 0.75    // increased height for larger popup
+
+    width: parent.width * 0.7
+    height: parent.height * 0.75
     anchors.centerIn: parent
 
     property string folderPath: ""
     property string fileName: ""
-    property var selectedImagePaths: []   // list of multiple selected images
+    property var selectedImagePaths: []
 
-    // background of the popup
+    // THIS is now the ONLY source of truth for selection
+    property var selectedTags: []
+
     background: Rectangle {
-        color: "#2e2e2e"     // darker gray background, same as app background
-        border.width: 4       // thicker border
-        border.color: "white" // white border
-        radius: 8             // rounded corners
+        color: "#2e2e2e"
+        border.width: 4
+        border.color: "white"
+        radius: 8
     }
 
     ColumnLayout {
@@ -30,32 +33,28 @@ Popup {
         anchors.margins: 10
         spacing: 10
 
-        // display the file name at the top
         Label {
             text: popupRoot.fileName
             font.bold: true
             font.pointSize: 14
-            color: "white"    // readable on dark background
+            color: "white"
             Layout.alignment: Qt.AlignHCenter
         }
 
-        // display the image
         Image {
             source: popupRoot.folderPath && popupRoot.fileName
                     ? popupRoot.folderPath + "/" + popupRoot.fileName
                     : ""
+
             fillMode: Image.PreserveAspectFit
             Layout.fillWidth: true
             Layout.preferredHeight: parent.height * 0.6
-            Layout.alignment: Qt.AlignHCenter
         }
 
-        // Scrollable tag list to prevent overflow
         ScrollView {
-            id: tagScroll
             Layout.fillWidth: true
-            Layout.fillHeight: true    // fills remaining vertical space
-            clip: true                 // ensures content does not render outside
+            Layout.fillHeight: true
+            clip: true
 
             ListView {
                 id: tagList
@@ -66,67 +65,96 @@ Popup {
                     width: parent.width
                     spacing: 6
 
-                    // CheckBox for selecting subtags
                     CheckBox {
-                        visible: !modelData["header"]       // only for subtags
-                        checked: modelData["selected"] || false
+                        visible: !modelData.header
 
-                        // track selection state
-                        onCheckedChanged: modelData["selected"] = checked
+                        checked: popupRoot.selectedTags.some(function(t) {
+                            return t.parent === modelData.parent &&
+                                   t.subtag === modelData.subtag
+                        })
 
-                        palette.text: "white"               // readable on dark background
+                        onToggled: {
+                            let tags = popupRoot.selectedTags
+
+                            if (checked) {
+                                // avoid duplicates
+                                let exists = tags.some(function(t) {
+                                    return t.parent === modelData.parent &&
+                                           t.subtag === modelData.subtag
+                                })
+
+                                if (!exists) {
+                                    tags.push({
+                                        parent: modelData.parent,
+                                        subtag: modelData.subtag
+                                    })
+                                }
+                            } else {
+                                tags = tags.filter(function(t) {
+                                    return !(t.parent === modelData.parent &&
+                                             t.subtag === modelData.subtag)
+                                })
+                            }
+
+                            popupRoot.selectedTags = tags
+                        }
                     }
 
-                    // display subtag or header
                     Text {
-                        text: modelData["header"]
-                              ? modelData["parent"]        // header text
-                              : "    " + modelData["subtag"] // subtag text with indent
-                        font.bold: modelData["header"]     // bold for headers
-                        color: "white"                     // readable on dark background
+                        text: modelData.header
+                              ? modelData.parent
+                              : "    " + modelData.subtag
 
-                        // prevent long text from overflowing
+                        font.bold: modelData.header
+                        color: "white"
                         wrapMode: Text.Wrap
-                        width: parent.width - 40           // leave space for checkbox
+                        width: parent.width - 40
                     }
                 }
             }
         }
 
-        // Submit button row
         RowLayout {
-            Layout.fillWidth: true
             Layout.alignment: Qt.AlignRight
+            spacing: 10
 
             Button {
                 text: "Submit"
-                onClicked: {
-                    // collect all selected tags
-                    let selectedTags = []
-                    for (let i = 0; i < tagList.model.length; i++) {
-                        let item = tagList.model[i]
-                        if (!item.header && item.selected) {
-                            selectedTags.push({
-                                parent: item.parent,
-                                subtag: item.subtag
-                            })
-                        }
-                    }
 
-                    // determine which images to tag (batch or single fallback)
+                onClicked: {
                     let imagesToTag = popupRoot.selectedImagePaths.length > 0
                         ? popupRoot.selectedImagePaths
                         : [popupRoot.folderPath + '/' + popupRoot.fileName]
 
-                    console.log("Batch tags:", selectedTags, "on images:", imagesToTag)
+                    console.log("SUBMIT tags:", popupRoot.selectedTags)
+                    console.log("SUBMIT images:", imagesToTag)
 
-                    // call backend batch API
                     tagHandler.attach_tags_batch(
                         imagesToTag,
-                        selectedTags
+                        popupRoot.selectedTags
                     )
 
-                    popupRoot.close() // close popup after submission
+                    popupRoot.close()
+                }
+            }
+
+            Button {
+                text: "Remove"
+
+                onClicked: {
+                    let imagesToTag = popupRoot.selectedImagePaths.length > 0
+                        ? popupRoot.selectedImagePaths
+                        : [popupRoot.folderPath + '/' + popupRoot.fileName]
+
+                    console.log("REMOVE tags:", popupRoot.selectedTags)
+                    console.log("REMOVE images:", imagesToTag)
+
+                    tagHandler.remove_tags_batch(
+                        imagesToTag,
+                        popupRoot.selectedTags
+                    )
+
+                    popupRoot.close()
                 }
             }
         }

@@ -133,6 +133,75 @@ class TagHandler (QObject):
         # NEW: persist tag dictionary once after batch
         self.file_handler.save_tag_json(self.tag_dictionary)
 
+    @Slot('QVariantList', 'QVariantList')
+    def remove_tags_batch(self, file_locations, tag_pairs):
+        """
+        Remove multiple tags from multiple images.
+        Fixed version:
+        - fully syncs ImageObject + tag_dictionary
+        - avoids stale dictionary references
+        - prevents silent failed removals
+        """
+
+        images = self.file_handler.get_images()
+
+        # build fast lookup map (path -> ImageObject)
+        path_map = {}
+        for img in images.values():
+            try:
+                resolved = Path(img.path).resolve()
+                path_map[resolved] = img
+            except Exception as e:
+                print(f"Skipping invalid image path {img.path}: {e}")
+
+        for file_location in file_locations:
+            clean_location = (
+                QUrl(file_location).toLocalFile()
+                if str(file_location).startswith("file://")
+                else file_location
+            )
+            clean_location = Path(clean_location).resolve()
+
+            image_obj = path_map.get(clean_location)
+
+            if image_obj is None:
+                print(f"No image found for path: {file_location}")
+                continue
+
+            for pair in tag_pairs:
+                parent_tag = pair["parent"] + "Tag"
+                tag = pair["subtag"]
+                full_tag = f"{parent_tag}:{tag}"
+
+                # 1. Remove from ImageObject (source of truth)
+                if image_obj.has_tag(full_tag):
+                    image_obj.remove_tag(full_tag)
+                    print(f"Removed {full_tag} from image {image_obj.image_id}")
+
+                # 2. Safely remove from tag_dictionary
+                try:
+                    if (
+                            parent_tag in self.tag_dictionary and
+                            tag in self.tag_dictionary[parent_tag]
+                    ):
+                        if image_obj.image_id in self.tag_dictionary[parent_tag][tag]:
+                            self.tag_dictionary[parent_tag][tag].remove(image_obj.image_id)
+
+                        # cleanup empty lists (prevents ghost tags)
+                        if not self.tag_dictionary[parent_tag][tag]:
+                            del self.tag_dictionary[parent_tag][tag]
+
+                except Exception as e:
+                    print(f"Dictionary cleanup error for {full_tag}: {e}")
+
+            # persist updated image
+            self.file_handler.add_image(image_obj)
+
+        # persist tag dictionary once
+        self.file_handler.save_tag_json(self.tag_dictionary)
+
+        print("Batch tag removal complete")
+
 
     def start_tag_watchers(self):
         thread = threading.Thread(target=self._watch_tags, daemon=True)
