@@ -26,50 +26,49 @@ Page {
             ColumnLayout {
                 id: settingsGrid
                 width: parent.width
-                columns: 1
-                columnSpacing: 20
-                rowSpacing: 20
+                spacing: 20
 
                 Rectangle {
                     Layout.fillWidth: true
                     height: 80
                     radius: 8
                     color: "#1e2a3a"
-                    ColumnLayout {
+
+                    RowLayout {
                         anchors.fill: parent
+                        anchors.margins: 12
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            ColumnLayout {
-                                Text { text: "Frequency"; font.bold: true }
-                                Text { text: "Changes how often the system changes your background" }
-                            }
+                        ColumnLayout {
+                            Layout.preferredWidth: settingsGrid.width * 0.5
+                            Layout.alignment: Qt.AlignVCenter
+                            Text { text: "Frequency"; font.bold: true; color: "white" }
+                            Text { text: "Changes how often the system changes your background"; color: "white" }
+                        }
 
-                            ColumnLayout {
-                                spacing: 4
-                                RowLayout {
-                                    spacing: 8
-                                    TextField {
-                                        id: frequencyField
-                                        text: settingsHandler.getFrequency
-                                        implicitWidth: 120
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
+                            RowLayout {
+                                spacing: 8
+                                TextField {
+                                    id: frequencyField
+                                    text: settingsHandler.getFrequency
+                                    implicitWidth: 120
+                                }
+                                Button {
+                                    text: "Submit"
+                                    onClicked: {
+                                        settingsHandler.setFrequency(parseInt(frequencyField.text))
+                                        fileHandler.save_settings()
+                                        frequencyField.text = settingsHandler.getFrequency
                                     }
-                                    Button {
-                                        text: "Submit"
-                                        onClicked: {
-                                            settingsHandler.setFrequency(parseInt(frequencyField.text))
-                                            fileHandler.save_settings()
-                                            frequencyField.text = settingsHandler.getFrequency
-                                        }
-                                    }
-                                    Button {
-                                        text: "Default"
-                                        onClicked: {
-                                            settingsHandler.setFrequency(settingsHandler.defaultFrequency)
-                                            fileHandler.save_settings()
-                                            frequencyField.text = settingsHandler.getFrequency
-                                        }
+                                }
+                                Button {
+                                    text: "Default"
+                                    onClicked: {
+                                        settingsHandler.setFrequency(settingsHandler.defaultFrequency)
+                                        fileHandler.save_settings()
+                                        frequencyField.text = settingsHandler.getFrequency
                                     }
                                 }
                             }
@@ -83,84 +82,84 @@ Page {
                     height: 80
                     radius: 8
                     color: "#1e2a3a"
-                    ColumnLayout {
+
+                    RowLayout {
                         anchors.fill: parent
+                        anchors.margins: 12
 
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            ColumnLayout {
-                                Text { text: "Priority"; font.bold: true }
-                                Text { text: "Changes the order in which tags are applied" }
-                            }
+                        ColumnLayout {
+                            Layout.preferredWidth: settingsGrid.width * 0.5
+                            Layout.alignment: Qt.AlignVCenter
+                            Text { text: "Priority"; font.bold: true; color: "white" }
+                            Text { text: "Changes the order in which tags are applied"; color: "white" }
+                        }
 
-                            ColumnLayout {
-                                spacing: 4
-                                RowLayout {
-                                    spacing: 8
+                        ColumnLayout {
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
+                            RowLayout {
+                                spacing: 8
 
-                                    //dropdown of tags
-                                    ComboBox {
-                                        id: priorityTags
-                                        model: tagHandler.dropdownItems
-                                        textRole: "subtag"
+                                //dropdown of tags
+                                ComboBox {
+                                    id: priorityTags
+                                    model: tagHandler.dropdownItems
+                                    textRole: "subtag"
 
-                                        displayText: currentIndex >= 0 ? currentText : "Select a tag..."
+                                    displayText: currentIndex >= 0 ? currentText : "Select a tag..."
 
-                                        delegate: ItemDelegate {
-                                            width: parent.width
+                                    delegate: ItemDelegate {
+                                        width: parent.width
 
-                                            // allows for header groups in dropdown
-                                            visible: true
-                                            enabled: !modelData["header"]
+                                        // allows for header groups in dropdown
+                                        visible: true
+                                        enabled: !modelData["header"]
 
-                                            contentItem: Text {
-                                                text: modelData["header"] ? modelData["parent"] : "    " + modelData["subtag"]
-                                                font.bold: modelData["header"]
-                                                color: modelData["header"] ? "gray" : "black"
-                                            }
-                                        }
-
-                                        onCurrentIndexChanged: {
-                                            let item = tagHandler.dropdownItems[currentIndex]
-
-                                            if (item && !item.header) {
-                                                priorityField.value = settingsHandler.getPriority(item.subtag)
-                                            }
+                                        contentItem: Text {
+                                            text: modelData["header"] ? modelData["parent"] : "    " + modelData["subtag"]
+                                            font.bold: modelData["header"]
+                                            color: modelData["header"] ? "gray" : "black"
                                         }
                                     }
 
-                                    //Text to input priority TODO: finish priority python code before this
-                                    SpinBox {
-                                        id: priorityField
-                                        from: 1
-                                        to: 10
-                                        stepSize: 1
-                                        value: 5
-                                        editable: true
-                                    }
-
-                                    Button {
-                                        text: "Submit"
-                                        onClicked: {
-                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
-                                            if (item && !item.header) {
-                                                settingsHandler.setPriority(priorityField.value, item.subtag)
-                                                fileHandler.save_settings()
-                                                priorityField.value = settingsHandler.getPriority(item.subtag)
-                                            }
+                                    onCurrentIndexChanged: {
+                                        let item = tagHandler.dropdownItems[currentIndex]
+                                        if (item && !item.header) {
+                                            priorityField.value = settingsHandler.getPriority(item.subtag)
                                         }
                                     }
+                                }
 
-                                    Button {
-                                        text: "Default"
-                                        onClicked: {
-                                            let item = tagHandler.dropdownItems[priorityTags.currentIndex]
-                                            if (item && !item.header) {
-                                                settingsHandler.setPriority(settingsHandler.defaultPriority, item.subtag)
-                                                fileHandler.save_settings()
-                                                priorityField.value = settingsHandler.getPriority(item.subtag)
-                                            }
+                                //Text to input priority TODO: finish priority python code before this
+                                SpinBox {
+                                    id: priorityField
+                                    from: 1
+                                    to: 10
+                                    stepSize: 1
+                                    value: 5
+                                    editable: true
+                                }
+
+                                Button {
+                                    text: "Submit"
+                                    onClicked: {
+                                        let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                        if (item && !item.header) {
+                                            settingsHandler.setPriority(priorityField.value, item.subtag)
+                                            fileHandler.save_settings()
+                                            priorityField.value = settingsHandler.getPriority(item.subtag)
+                                        }
+                                    }
+                                }
+
+                                Button {
+                                    text: "Default"
+                                    onClicked: {
+                                        let item = tagHandler.dropdownItems[priorityTags.currentIndex]
+                                        if (item && !item.header) {
+                                            settingsHandler.setPriority(settingsHandler.defaultPriority, item.subtag)
+                                            fileHandler.save_settings()
+                                            priorityField.value = settingsHandler.getPriority(item.subtag)
                                         }
                                     }
                                 }
@@ -188,6 +187,8 @@ Page {
                             Layout.fillWidth: true
 
                             ColumnLayout {
+                                Layout.preferredWidth: settingsGrid.width * 0.5
+                                Layout.alignment: Qt.AlignVCenter
                                 Text { text: "Sensitivity"; font.bold: true; color: "white" }
                                 Text { text: "Changes how sensitive the system is to changes in your environment"; color: "white" }
                             }
@@ -195,10 +196,11 @@ Page {
                             ComboBox {
                                 id: sensitivityField
                                 implicitWidth: 160
+                                Layout.alignment: Qt.AlignVCenter
                                 model: tagHandler.dropdownItems
                                 textRole: "subtag"
                                 displayText: currentIndex >= 0 ? currentText : "Select a tag..."
-                                
+
                                 onCurrentIndexChanged: {
                                     if (currentIndex < 0) {
                                         groups.currentGroups = []
@@ -211,7 +213,7 @@ Page {
                                     }
                                     groups.currentGroups = tagHandler.getTagGroups(item["parent"], item["subtag"])
                                 }
-                                
+
                                 delegate: ItemDelegate {
                                     width: parent.width
                                     enabled: !modelData["header"]
@@ -285,7 +287,7 @@ Page {
                                     let selected = sensitivityField.model[sensitivityField.currentIndex]
                                     let checked = sensitivityColumn.parent.sensitivityChecked
                                     let enabledGroups = Object.keys(checked).filter(k => checked[k])
-                                    
+
                                     tagHandler.setTagGroupsEnabled(selected["parent"], selected["subtag"], enabledGroups)
                                     fileHandler.save_settings()
                                 }

@@ -25,7 +25,6 @@ class TagHandler (QObject):
                 tag_json[tag] = {}
 
         self.tag_dictionary = tag_json
-        self._normalize_tag_data()
 
         self.tag_classes = tag_class_list
 
@@ -37,6 +36,7 @@ class TagHandler (QObject):
             DateTag.add_dates(tag_json.get("DateTag", {}))
 
         self.default_priority = self.settings_handler.defaultPriority
+        self._normalize_tag_data()
 
         self._prepare_dropdown_items()
 
