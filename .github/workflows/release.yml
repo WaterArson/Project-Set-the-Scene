@@ -2,8 +2,8 @@ name: Build & Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -15,7 +15,7 @@ jobs:
           - os: ubuntu-latest
             artifact: dist/*.deb
           - os: macos-latest
-            artifact: dist/*.dmg   # .app is packaged inside a .dmg
+            artifact: dist/*.dmg
 
     runs-on: ${{ matrix.os }}
 
@@ -23,19 +23,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 20
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: npm ci
+        run: pip install -r requirements.txt pyinstaller
 
-      - name: Build
-        run: npm run build        # your compile/bundle step
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
+        run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
 
-      - name: Package
-        run: npx electron-builder # produces .exe / .deb / .app+.dmg
+      - name: Build with PyInstaller (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
+
+      - name: Build with PyInstaller (macOS)
+        if: matrix.os == 'macos-latest'
+        run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
+
+      - name: Package .deb (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir -p deb-pkg/usr/local/bin
+          cp dist/project-set-the-scene deb-pkg/usr/local/bin/project-set-the-scene
+          mkdir -p deb-pkg/DEBIAN
+          echo "Package: project-set-the-scene
+Version: 1.0.0
+Architecture: amd64
+Maintainer: You <you@example.com>
+Description: Project Set The Scene" > deb-pkg/DEBIAN/control
+          dpkg-deb --build deb-pkg dist/project-set-the-scene.deb
+
+      - name: Package .dmg (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install create-dmg
+          create-dmg dist/project-set-the-scene.dmg dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
