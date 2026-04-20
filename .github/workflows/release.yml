@@ -31,16 +31,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pyinstaller
 
-      - name: Build with PyInstaller (Windows)
-        if: matrix.os == 'windows-latest'
-        run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
-
-      - name: Build with PyInstaller (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
-
-      - name: Build with PyInstaller (macOS)
-        if: matrix.os == 'macos-latest'
+      - name: Build with PyInstaller
         run: pyinstaller --onefile --windowed --name project-set-the-scene src/main.py
 
       - name: Package .deb (Linux only)
@@ -49,11 +40,7 @@ jobs:
           mkdir -p deb-pkg/usr/local/bin
           cp dist/project-set-the-scene deb-pkg/usr/local/bin/project-set-the-scene
           mkdir -p deb-pkg/DEBIAN
-          echo "Package: project-set-the-scene
-Version: 1.0.0
-Architecture: amd64
-Maintainer: You <you@example.com>
-Description: Project Set The Scene" > deb-pkg/DEBIAN/control
+          printf 'Package: project-set-the-scene\nVersion: 1.0.0\nArchitecture: amd64\nMaintainer: You <you@example.com>\nDescription: Project Set The Scene\n' > deb-pkg/DEBIAN/control
           dpkg-deb --build deb-pkg dist/project-set-the-scene.deb
 
       - name: Package .dmg (macOS only)
