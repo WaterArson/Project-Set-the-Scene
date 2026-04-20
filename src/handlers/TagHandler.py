@@ -379,6 +379,36 @@ class TagHandler (QObject):
                 return False
 
         return True
+
+    """
+    This function is for retrieving the groups dictionary from each tag to be saved into settings
+
+    params: None
+    returns: dict - dictionary of tag groups to be saved into settings
+    """
+    def getTagGroupsForSettings(self):
+        groups_dict = {}
+        for tag_name, tag_class in self.tag_classes.items():
+            groups = getattr(tag_class, "groups", None)
+            if groups:
+                groups_dict[tag_name] = groups
+        return groups_dict
+
+    """
+    This function is for initializing the groups for each tag based on a provided dictionary.
+
+    params: groups_dict: dict - dictionary of tag groups to initialize
+    returns: None
+    """
+    def initializeTagGroups(self, groups_dict):
+        for tag_name, groups in groups_dict.items():
+            tag_class = self.tag_classes.get(tag_name)
+            if tag_class and hasattr(tag_class, "groups"):
+                setattr(tag_class, "groups", groups)
+                fill_function = getattr(tag_class, "fill_groups_for_selection", None)
+                if callable(fill_function):
+                    fill_function()
+        
     
     """
     This function is for getting each tags internal groups based on the tags internal groups list.

@@ -53,10 +53,27 @@ class SettingsHandler(QObject):
         print(self.priority, flush=True)
 
     @Slot(str, result=int)
-    def getPriority(self, name): 
+    def getPriority(self, name):
         print(name, flush=True)
         return self.priority.get(name, SettingsHandler.DEFAULT_PRIORITY)
     
     @Property(int, constant=True)
     def defaultPriority(self):
         return self.DEFAULT_PRIORITY
+
+    """
+    This function is for retrieving the sensitivity settings for each tag based on a provided tag handler.
+
+    params: tagHandler: TagHandler - the tag handler instance
+    returns: dict - dictionary of sensitivity settings for each tag
+    """
+    def getSensitivity(self, tagHandler):
+        return tagHandler.getTagGroupsForSettings()
+    
+    """
+    This function is for setting the sensitivity settings for each tag based on a provided tag handler and sensitivity settings.
+    params: tagHandler: TagHandler - the tag handler instance
+            sensitivitySettings: dict - dictionary of sensitivity settings for each tag
+    """
+    def setSensitivity(self, tagHandler, sensitivitySettings):
+        tagHandler.initializeTagGroups(sensitivitySettings)

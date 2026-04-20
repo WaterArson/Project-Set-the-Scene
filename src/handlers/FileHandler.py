@@ -18,6 +18,7 @@ class FileHandler (QObject):
         super().__init__()
 
         self.settingsHandler = settingsHandler
+        
 
         self.folder: str = ""
         self.ensure_image_folder_exists()
@@ -32,6 +33,8 @@ class FileHandler (QObject):
             with open(pictures_file, "r") as file:
                 self.pictures = json.load(file) # Load raw JSON data
 
+    def load_settings_file(self, tagHandler):
+        self.tagHandler = tagHandler
         self.load_settings()
 
         #self refers to this instance of the FileHandler object
@@ -189,9 +192,14 @@ class FileHandler (QObject):
             with open(settings_file, "r") as file:
                 settings = json.load(file)
             self.settingsHandler.interval = settings.get("interval", self.settingsHandler.interval)
+            self.settingsHandler.priority = settings.get("priority", self.settingsHandler.priority)
+            self.settingsHandler.setSensitivity(self.tagHandler, settings.get("sensitivity", self.settingsHandler.getSensitivity(self.tagHandler)))
         else:
             settings = {
                 "interval": self.settingsHandler.interval,
+                "priority": self.settingsHandler.priority,
+                "sensitivity": self.settingsHandler.getSensitivity(self.tagHandler),
+
             }
             with open(self.settings_path, "w") as file:
                 json.dump(settings, file)
@@ -201,6 +209,8 @@ class FileHandler (QObject):
     def save_settings(self):
         settings = {
             "interval": self.settingsHandler.interval,
+            "priority": self.settingsHandler.priority,
+            "sensitivity": self.settingsHandler.getSensitivity(self.tagHandler),
         }
         with open(self.settings_path, "w") as file:
             json.dump(settings, file)
