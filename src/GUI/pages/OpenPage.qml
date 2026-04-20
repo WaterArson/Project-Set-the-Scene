@@ -17,145 +17,157 @@ Page {
             Layout.preferredHeight: 80
         }
 
-        RowLayout {
-            id: contentRow
+        Rectangle {
+            id: roku
+            Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 0
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            //  Gradient background (UNCHANGED STYLE)
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#301934" }
+                GradientStop { position: 1.0; color: "black" }
+            }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: parent.height * 0.2
-                    Layout.margins: 0
+            //  SKYLINE CONTAINER
+            Item {
+                id: skylineWrapper
+                anchors.fill: parent
+                clip: true
 
+                //  MID LAYER
+                Item {
+                    id: midLayer
+                   width: skylineWrapper.width * 2
+                    //height: skylineWrapper.height
+                }
 
-                    Rectangle {
-                    //purple gradient background rectangle
-                        id: roku
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
+                //  FRONT LAYER
+                Item {
+                    id: frontLayer
+                    width: skylineWrapper.width * 2
+                    height: skylineWrapper.height
+                }
 
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#301934" } // Dark purple
-                                GradientStop { position: 1.0; color: "black" }
-                            }
-                             // NEW wrapper
-                             Item {
-                                id: skyline
-                                width: parent.width
-                                height: parent.height
-                                clip: true
-                             }
-                              Rectangle {
-                                id: ground
-                                parent: skyline
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                height: 100
-                                     Component.onCompleted: {
-                                        // Example of adding buildings programmatically after the component is created
-                                        // More complex layouts might use a Repeater with a data model.
-                                        createBuilding(50, 150, "#A9A9A9") // all dark gray
-                                        createBuilding(130, 200, "#A9A9A9")
-                                        createBuilding(210, 100, "#A9A9A9")
-                                        createBuilding(290, 250, "#A9A9A9")
-                                        createBuilding(370, 180, "#A9A9A9")
-                                        createBuilding(450, 130, "#A9A9A9")
-                                        createBuilding(530, 140, "#A9A9A9")
-                                        createBuilding(610, 100, "#A9A9A9")
-                                        createBuilding(690, 132, "#A9A9A9")
-                                        createBuilding(770, 94, "#A9A9A9")
-                                        createBuilding(850, 130, "#A9A9A9")
-                                        createBuilding(930, 240, "#A9A9A9")
-                                        createBuilding(1010, 187, "#A9A9A9")
-                                        createBuilding(1090, 157, "#A9A9A9")
-                                    }
+                // SMOOTH LOOP
+                Timer {
+                    interval: 16
+                    running: true
+                    repeat: true
 
-                                    // Function to create building rectangles
-                                   function createBuilding(xPos, heightVal, colorVal) {
+                    onTriggered: {
+                        skylineWrapper.moveLayer(midLayer, 0.4)
+                        skylineWrapper.moveLayer(frontLayer, 0.9)
+                    }
+                }
 
-                                    var building = Qt.createQmlObject(
-                                        'import QtQuick 2.15; Rectangle { width: 80; height: ' + heightVal + '; color: "' + colorVal + '" }',
-                                        skyline,
-                                        "building"
+                function moveLayer(layer, speed) {
+                     layer.x -= speed
+                    if (layer.x <= -skylineWrapper.width) {
+                        layer.x = 0
+                    }
+                }
+
+                Component.onCompleted: {
+                    setupLayer(midLayer, 0.6, "#7a5c9e")
+                    setupLayer(frontLayer, 1.0, "#a9a9a9")
+                }
+
+                function setupLayer(layer, heightScale, color) {
+                    var layout = generateLayout()
+                    createFromData(layer, layout, 0, heightScale, color)
+                    createFromData(layer, layout, skylineWrapper.width, heightScale, color)
+                }
+
+                function generateLayout() {
+                    var arr = []
+                    var x = 0
+
+                    while (x < skylineWrapper.width) {
+                        var w = 60 + Math.random() * 40
+                        var h = 120 + Math.random() * 180
+
+                        arr.push({x: x, w: w, h: h})
+                        x += w + 6    
+                        // after loop finishes:
+                        arr.push({ x: x, w: 40, h: 20 })
+                    }
+
+                    return arr
+                }
+
+                function createFromData(layer, layout, offsetX, heightScale, color) {
+
+                    var ground = Qt.createQmlObject(
+                        'import QtQuick 2.15; Rectangle {' +
+                        'height: 20; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom;' +
+                        'color: "transparent"}',
+                        layer
+                    )
+
+                    for (var i = 0; i < layout.length; i++) {
+
+                        var b = layout[i]
+
+                        var building = Qt.createQmlObject(
+                            'import QtQuick 2.15; Rectangle { radius: 2 }',
+                            layer
+                        )
+
+                        building.x = b.x + offsetX
+                        building.width = b.w
+                        building.height = b.h * heightScale
+                        building.color = color
+                        building.anchors.bottom = ground.top
+
+                        // 🪟 WINDOWS (LESS OBNOXIOUS)
+                        if (heightScale > 0.5) {
+
+                            var cols = Math.floor(b.w / 18)
+                            var rows = Math.floor((b.h * heightScale) / 25)
+
+                            for (var r = 0; r < rows; r++) {
+                                for (var c = 0; c < cols; c++) {
+
+                                    let win = Qt.createQmlObject(
+                                        'import QtQuick 2.15; Rectangle { width: 6; height: 8; color: "black"; radius: 1 }',
+                                        building
                                     )
 
-                                    building.x = xPos
-                                    building.anchors.bottom = ground.top
+                                    win.x = 6 + c * 14
+                                    win.y = 6 + r * 18
 
-                                    // create windows
-                                    var cols = 4
-                                    var rows = Math.floor(heightVal / 20)
+                                    let timer = Qt.createQmlObject(
+                                        'import QtQuick 2.15; Timer { interval: 2000 + Math.random()*3000; repeat: true; running: true }',
+                                        win
+                                    )
 
-                                    for (var r = 0; r < rows; r++) {
-                                        for (var c = 0; c < cols; c++) {
-
-                                            var win = Qt.createQmlObject(
-                                                'import QtQuick 2.15; Rectangle { width: 8; height: 10; color: "black" }',
-                                                building,
-                                                "window"
-                                            )
-
-                                            win.x = 8 + c * 16
-                                            win.y = 8 + r * 18
-
-                                            // flicker timer
-                                            var timer = Qt.createQmlObject(
-                                                'import QtQuick 2.15; Timer { interval: 1000; repeat: true; running: true }',
-                                                win,
-                                                "timer"
-                                            )
-
-                                            timer.triggered.connect(function() {
-                                                if (Math.random() > 0.5)
-                                                    win.color = "yellow"
-                                                else
-                                                    win.color = "black"
-                                            })
-                                        }
-                                    }
+                                    timer.triggered.connect(function() {
+                                        // ✅ much calmer flicker
+                                        if (Math.random() > 0.8)
+                                            win.color = "#ffd966"
+                                        else
+                                            win.color = "black"
+                                    })
                                 }
-
-                                }
-                                //this creates the animation for the objects listed above
-                            SequentialAnimation {
-            loops: Animation.Infinite // Make it loop forever
-            running: true             // Start automatically
-
-            // Move to point B
-            NumberAnimation {
-                target: skyline
-                property: "x"
-                to: -50
-                duration: 5000
-                easing.type: Easing.InOutQuad
-            }
-            PropertyAction {
-            target: skyline
-            property: "x"
-            value: 1250 // Start point
-        }
-        }
-
-                    Text {
-                        id: text
-                        text: "Set The Scene"
-                        anchors.centerIn: parent
-                        font.pixelSize: roku.height * 0.25
-                        color: "white"
+                            }
+                        }
                     }
-                    RowLayout {
-                       Layout.fillWidth: true
-                       Layout.preferredHeight: parent.height * 0.15
-                       Layout.margins: 0
-                    }
+                }
             }
-           }
-         }
-       }
+
+            // 🏷 TITLE TEXT (ALWAYS ON TOP)
+            Text {
+                text: "Project: Set the Scene"
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: parent.height * 0.08
+
+                font.pixelSize: parent.height * 0.14
+                font.bold: true
+                color: "white"
+
+                z: 999
+            }
+        }
     }
 }
